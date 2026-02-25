@@ -1,4 +1,7 @@
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from "lz-string";
+import {
+  compressToEncodedURIComponent,
+  decompressFromEncodedURIComponent,
+} from "lz-string";
 import type { CourseAssessment } from "./uq-scraper";
 import type { GradeBand } from "./grades";
 import type { SemesterSelection } from "./semester";
@@ -12,9 +15,19 @@ export type CourseState = {
   semester?: SemesterSelection;
 };
 
+export type SemesterCardState = {
+  id: string;
+  selection: SemesterSelection;
+};
+
 export type AppState = {
   courses: CourseState[];
+  /** Legacy single-semester field; kept for backward compatibility with old links/localStorage. */
   defaultSemester?: SemesterSelection;
+  /** Optional list of semester cards shown on the dashboard. */
+  semesters?: SemesterCardState[];
+  /** ID of the active semester card, if any. */
+  activeSemesterId?: string;
 };
 
 /**
@@ -33,7 +46,11 @@ export function decodeState(encoded: string | null): AppState | null {
     const json = decompressFromEncodedURIComponent(encoded);
     if (!json) return null;
     const parsed = JSON.parse(json) as unknown;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as AppState).courses)) {
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !Array.isArray((parsed as AppState).courses)
+    ) {
       return null;
     }
     return parsed as AppState;
