@@ -30,11 +30,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const courseCode =
         searchParams.get("courseCode") ?? searchParams.get("code");
-    const universityParam = searchParams.get("university")?.toLowerCase() ?? "uq";
+    const universityParam =
+        searchParams.get("university")?.toLowerCase() ?? "uq";
 
     if (!isSupportedUniversity(universityParam)) {
         return NextResponse.json(
-            { error: `Unsupported university: ${universityParam}. Supported: ${SUPPORTED_UNIVERSITIES.join(", ")}` },
+            {
+                error: `Unsupported university: ${universityParam}. Supported: ${SUPPORTED_UNIVERSITIES.join(", ")}`
+            },
             { status: 400 }
         );
     }
@@ -83,24 +86,49 @@ export async function GET(request: NextRequest) {
     const cacheControl = "public, max-age=31536000, immutable"; // 1 year; data keyed by course+semester
 
     try {
-        const cached =
-            await getCached<Awaited<ReturnType<typeof fetchCourseAssessment>>>(
-                cacheKey
-            );
+        // Cache-first: check current key, then legacy keys (pre-university prefix) and migrate if found.
+        const cached = await getCached<
+            Awaited<ReturnType<typeof fetchCourseAssessment>>
+        >(cacheKey);
         if (cached) {
             await incrAnalytics("scrape:hits");
             return NextResponse.json(cached, {
                 status: 200,
-                headers: { "Cache-Control": cacheControl },
+                headers: { "Cache-Control": cacheControl }
             });
+        }
+
+        const legacyKeys: string[] = [];
+        if (semester) {
+            // Legacy format (assume uq): scrape:courseCode:year:semester:delivery
+            legacyKeys.push(
+                `scrape:${trimmedCode}:${semester.year}:${semester.semester.replace(/\s+/g, "_")}:${semester.delivery}`
+            );
+        } else {
+            // Legacy simple format: scrape:courseCode
+            legacyKeys.push(`scrape:${trimmedCode}`);
+        }
+
+        for (const legacyKey of legacyKeys) {
+            const legacyCached = await getCached<
+                Awaited<ReturnType<typeof fetchCourseAssessment>>
+            >(legacyKey);
+            if (legacyCached) {
+                // Best-effort migrate to new key to avoid future scrapes.
+                await setCached(cacheKey, legacyCached);
+                await incrAnalytics("scrape:hits");
+                return NextResponse.json(legacyCached, {
+                    status: 200,
+                    headers: { "Cache-Control": cacheControl }
+                });
+            }
         }
 
         if (await isFailedScrape(cacheKey)) {
             await incrAnalytics("scrape:failed_skip");
             return NextResponse.json(
                 {
-                    error:
-                        "We've hit a temporary limit for this course. Please try again in a few hours or tomorrow."
+                    error: "We've hit a temporary limit for this course. Please try again in a few hours or tomorrow."
                 },
                 { status: 503 }
             );
@@ -117,7 +145,7 @@ export async function GET(request: NextRequest) {
         await incrAnalytics("scrape:misses");
         return NextResponse.json(data, {
             status: 200,
-            headers: { "Cache-Control": cacheControl },
+            headers: { "Cache-Control": cacheControl }
         });
     } catch (err) {
         const message =

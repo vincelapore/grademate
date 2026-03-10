@@ -69,6 +69,20 @@ export async function GET(request: NextRequest) {
             });
         }
 
+        // Legacy cache key fallback (pre-university prefix) and migrate if present.
+        const legacyKey = `delivery:${courseCode}:${year}:${semesterType.replace(/\s+/g, "_")}`;
+        const legacyCached = await getCached<{
+            modes: Awaited<ReturnType<typeof fetchAvailableDeliveryModes>>;
+        }>(legacyKey);
+        if (legacyCached) {
+            await setCached(cacheKey, legacyCached);
+            await incrAnalytics("delivery:hits");
+            return NextResponse.json(legacyCached, {
+                status: 200,
+                headers: { "Cache-Control": cacheControl },
+            });
+        }
+
         // Call the appropriate delivery modes function based on university
         let modes;
         if (universityParam === "qut") {
