@@ -187,6 +187,7 @@ function HomeContent() {
     const [showSemesterChangedBanner, setShowSemesterChangedBanner] =
         useState(false);
     const [addSemesterOpen, setAddSemesterOpen] = useState(false);
+    const [addCourseOpen, setAddCourseOpen] = useState(false);
     const [newSemesterSelection, setNewSemesterSelection] = useState<{
         year: number;
         semester: SemesterType;
@@ -1008,6 +1009,162 @@ function HomeContent() {
                     </div>
                 )}
 
+                {/* Add Course Modal */}
+                {addCourseOpen && (
+                    <div
+                        className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md'
+                        onClick={() => {
+                            setAddCourseOpen(false);
+                            setPendingCourse(null);
+                            setError(null);
+                        }}
+                        role='dialog'
+                        aria-modal='true'
+                        aria-labelledby='add-course-title'
+                    >
+                        <div
+                            className='mx-4 w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-900 p-8 shadow-2xl'
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2
+                                id='add-course-title'
+                                className='text-xl font-bold text-slate-50'
+                            >
+                                Add course
+                            </h2>
+                            <p className='mt-2 text-sm text-slate-400'>
+                                {effectiveSemester.semester} {effectiveSemester.year}
+                            </p>
+
+                            <div className='mt-6 space-y-4'>
+                                {!pendingCourse ? (
+                                    <>
+                                        <div>
+                                            <label className='mb-2 block text-sm font-medium text-slate-300'>
+                                                Course code
+                                            </label>
+                                            <input
+                                                value={courseInput}
+                                                onChange={(e) =>
+                                                    setCourseInput(
+                                                        e.target.value.toUpperCase()
+                                                    )
+                                                }
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        void findDeliveryModes(
+                                                            courseInput
+                                                        );
+                                                    }
+                                                }}
+                                                placeholder='e.g. CSSE3100'
+                                                className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-3 text-base font-medium outline-none backdrop-blur-sm placeholder:text-slate-500 transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20'
+                                                autoFocus
+                                            />
+                                        </div>
+                                        {error && (
+                                            <p className='text-sm font-medium text-rose-400'>
+                                                {error}
+                                            </p>
+                                        )}
+                                        <div className='flex gap-3 pt-2'>
+                                            <button
+                                                type='button'
+                                                onClick={() => {
+                                                    setAddCourseOpen(false);
+                                                    setError(null);
+                                                }}
+                                                className='flex-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-700'
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                disabled={loadingDeliveryModes || !courseInput.trim()}
+                                                onClick={() =>
+                                                    void findDeliveryModes(courseInput)
+                                                }
+                                                className='flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-400 hover:to-cyan-400 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none'
+                                            >
+                                                {loadingDeliveryModes ? (
+                                                    <>
+                                                        <span
+                                                            className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white'
+                                                            aria-hidden
+                                                        />
+                                                        Finding…
+                                                    </>
+                                                ) : (
+                                                    "Find"
+                                                )}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className='space-y-4'>
+                                        <div className='rounded-lg border border-slate-800/50 bg-slate-950/50 p-4'>
+                                            <p className='text-sm font-medium text-slate-300'>
+                                                {pendingCourse.courseCode}
+                                            </p>
+                                            <p className='text-xs text-slate-500 mt-1'>
+                                                {pendingCourse.semester} {pendingCourse.year}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className='text-sm font-medium text-slate-300 mb-3'>
+                                                Select delivery mode:
+                                            </p>
+                                            <div className='space-y-2'>
+                                                {pendingCourse.deliveryModes.map(
+                                                    (mode, idx) => {
+                                                        const isLoading =
+                                                            loadingCourse &&
+                                                            loadingCourseForDelivery ===
+                                                                mode.delivery;
+                                                        return (
+                                                            <button
+                                                                key={idx}
+                                                                disabled={loadingCourse}
+                                                                onClick={() => {
+                                                                    void addCourse(mode);
+                                                                    setAddCourseOpen(false);
+                                                                }}
+                                                                className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-3 text-left text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50'
+                                                            >
+                                                                <div className='flex items-center justify-between gap-2'>
+                                                                    <span className='flex items-center gap-2'>
+                                                                        {isLoading && (
+                                                                            <span
+                                                                                className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-500 border-t-sky-400'
+                                                                                aria-hidden
+                                                                            />
+                                                                        )}
+                                                                        <span>{mode.delivery}</span>
+                                                                    </span>
+                                                                    {mode.location && (
+                                                                        <span className='text-xs text-slate-500'>
+                                                                            {mode.location}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setPendingCourse(null)}
+                                            className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2 text-sm font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-slate-600 hover:bg-slate-900/50'
+                                        >
+                                            Back
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Dashboard: semester cards grid */}
                 <section className='grid gap-4 sm:grid-cols-3'>
                     {(state.semesters ?? []).map((card) => {
@@ -1232,188 +1389,57 @@ function HomeContent() {
 
                 {activeSemesterSelection ? (
                     <>
-                        <section className='grid gap-6 rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/50 via-slate-950/50 to-slate-900/30 p-6 backdrop-blur-sm shadow-xl shadow-black/20 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:p-8'>
-                            <div className='min-w-0 space-y-4'>
-                                {!pendingCourse ? (
-                                    <>
-                                        <div className='grid grid-cols-2 gap-2'>
-                                            <div className='col-span-2 flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-2 text-xs font-medium text-slate-300'>
-                                                <span>
-                                                    {effectiveSemester.semester}{" "}
-                                                    {effectiveSemester.year}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className='flex min-w-0 flex-wrap gap-x-2 gap-y-3 w-full'>
-                                            <input
-                                                value={courseInput}
-                                                onChange={(e) =>
-                                                    setCourseInput(
-                                                        e.target.value.toUpperCase()
-                                                    )
-                                                }
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") {
-                                                        void findDeliveryModes(
-                                                            courseInput
-                                                        );
-                                                    }
-                                                }}
-                                                placeholder='Course code (e.g. CSSE3100)'
-                                                className='min-w-0 flex-1 basis-0 rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2.5 text-sm font-medium outline-none backdrop-blur-sm placeholder:text-slate-500 transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20 sm:basis-auto'
-                                            />
-                                            <button
-                                                disabled={loadingDeliveryModes}
-                                                onClick={() =>
-                                                    void findDeliveryModes(
-                                                        courseInput
-                                                    )
-                                                }
-                                                className='inline-flex w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-400 hover:to-cyan-400 hover:shadow-xl hover:shadow-sky-500/30 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none sm:w-auto sm:min-w-[90px]'
-                                            >
-                                                {loadingDeliveryModes ? (
-                                                    <>
-                                                        <span
-                                                            className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white'
-                                                            aria-hidden
-                                                        />
-                                                        Finding…
-                                                    </>
-                                                ) : (
-                                                    "Find"
-                                                )}
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className='space-y-3'>
-                                        <div className='rounded-lg border border-slate-800/50 bg-slate-900/30 p-3'>
-                                            <p className='text-xs font-medium text-slate-400 mb-1'>
-                                                {pendingCourse.courseCode} -{" "}
-                                                {pendingCourse.semester}{" "}
-                                                {pendingCourse.year}
-                                            </p>
-                                            <p className='text-sm font-semibold text-slate-300'>
-                                                Select delivery mode:
-                                            </p>
-                                        </div>
-                                        <div className='space-y-2'>
-                                            {pendingCourse.deliveryModes.map(
-                                                (mode, idx) => {
-                                                    const isLoading =
-                                                        loadingCourse &&
-                                                        loadingCourseForDelivery ===
-                                                            mode.delivery;
-                                                    return (
-                                                        <button
-                                                            key={idx}
-                                                            disabled={
-                                                                loadingCourse
-                                                            }
-                                                            onClick={() =>
-                                                                void addCourse(
-                                                                    mode
-                                                                )
-                                                            }
-                                                            className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-3 text-left text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50'
-                                                        >
-                                                            <div className='flex items-center justify-between gap-2'>
-                                                                <span className='flex min-w-0 items-center gap-2'>
-                                                                    {isLoading && (
-                                                                        <span
-                                                                            className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-500 border-t-sky-400'
-                                                                            aria-hidden
-                                                                        />
-                                                                    )}
-                                                                    <span>
-                                                                        {
-                                                                            mode.delivery
-                                                                        }
-                                                                    </span>
-                                                                </span>
-                                                                {mode.location && (
-                                                                    <span className='shrink-0 text-xs text-slate-500'>
-                                                                        {
-                                                                            mode.location
-                                                                        }
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                }
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={() =>
-                                                setPendingCourse(null)
-                                            }
-                                            className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2 text-xs font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-slate-600 hover:bg-slate-900/50'
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                )}
-                                {error && (
-                                    <p className='text-xs font-medium text-rose-400'>
-                                        {error}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className='min-w-0 overflow-hidden rounded-xl border border-slate-800/50 bg-gradient-to-br from-slate-900/30 to-slate-950/50 p-6 backdrop-blur-sm'>
+                        <section className='flex items-center justify-between gap-4 rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/50 via-slate-950/50 to-slate-900/30 p-6 backdrop-blur-sm shadow-xl shadow-black/20'>
+                            <div className='min-w-0 flex-1'>
                                 {dashboardSummary ? (
-                                    <div className='space-y-4'>
+                                    <div className='flex flex-wrap items-center gap-x-8 gap-y-2'>
                                         {dashboardSummary.current && (
                                             <div className='min-w-0'>
-                                                <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-2'>
-                                                    Current Grade
+                                                <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-1'>
+                                                    Current
                                                 </p>
-                                                <p className='text-2xl font-bold tracking-tight text-slate-50'>
+                                                <p className='text-xl font-bold tracking-tight text-slate-50'>
                                                     <span className='inline-block bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent'>
-                                                        {dashboardSummary.current.avg.toFixed(
-                                                            1
-                                                        )}
-                                                        %
+                                                        {dashboardSummary.current.avg.toFixed(1)}%
                                                     </span>
-                                                    <span className='text-slate-400 ml-3 font-semibold'>
-                                                        Grade{" "}
-                                                        {
-                                                            dashboardSummary
-                                                                .current.band
-                                                        }
+                                                    <span className='text-slate-400 ml-2 text-base font-semibold'>
+                                                        Grade {dashboardSummary.current.band}
                                                     </span>
                                                 </p>
                                             </div>
                                         )}
                                         <div className='min-w-0'>
-                                            <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-2'>
+                                            <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-1'>
                                                 Overall
                                             </p>
-                                            <p className='text-2xl font-bold tracking-tight text-slate-50'>
+                                            <p className='text-xl font-bold tracking-tight text-slate-50'>
                                                 <span className='inline-block bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent'>
-                                                    {dashboardSummary.overall.avg.toFixed(
-                                                        1
-                                                    )}
-                                                    %
+                                                    {dashboardSummary.overall.avg.toFixed(1)}%
                                                 </span>
-                                                <span className='text-slate-400 ml-3 font-semibold'>
-                                                    Grade{" "}
-                                                    {
-                                                        dashboardSummary.overall
-                                                            .band
-                                                    }
+                                                <span className='text-slate-400 ml-2 text-base font-semibold'>
+                                                    Grade {dashboardSummary.overall.band}
                                                 </span>
                                             </p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className='flex h-full items-center text-sm text-slate-500'>
+                                    <p className='text-sm text-slate-500'>
                                         Add a course to get started
-                                    </div>
+                                    </p>
                                 )}
                             </div>
+                            <button
+                                onClick={() => {
+                                    setCourseInput("");
+                                    setPendingCourse(null);
+                                    setError(null);
+                                    setAddCourseOpen(true);
+                                }}
+                                className='shrink-0 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-400 hover:to-cyan-400 hover:shadow-xl hover:shadow-sky-500/30'
+                            >
+                                <span className='text-lg leading-none'>+</span>
+                                Add course
+                            </button>
                         </section>
 
                         <section className='space-y-4'>
