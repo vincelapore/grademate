@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { fetchUqHtml } from "./fetch-uq";
 import type { SemesterSelection } from "./semester";
+import { logger } from "./logger";
 
 const UQ_COURSE_URL = "https://programs-courses.uq.edu.au/course.html";
 
@@ -11,7 +12,7 @@ export type DeliveryModeOption = {
 };
 
 async function fetchHTML(url: string): Promise<string> {
-  console.log("[DeliveryModes] Fetching URL:", url);
+  logger.debug("delivery_modes", "fetch_html_start", { url });
   return fetchUqHtml(url);
 }
 
@@ -20,7 +21,11 @@ export async function fetchAvailableDeliveryModes(
   year: number,
   semester: "Semester 1" | "Semester 2" | "Summer"
 ): Promise<DeliveryModeOption[]> {
-  console.log("[DeliveryModes] Fetching delivery modes for:", courseCode, year, semester);
+  logger.info("delivery_modes", "fetch_modes_start", {
+    courseCode,
+    year,
+    semester,
+  });
   const url = `${UQ_COURSE_URL}?course_code=${encodeURIComponent(courseCode)}`;
   const html = await fetchHTML(url);
   const $ = cheerio.load(html);

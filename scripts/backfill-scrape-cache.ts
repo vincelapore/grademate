@@ -153,10 +153,16 @@ async function main(): Promise<void> {
                     semester
                 );
                 if (modes.length > 0) {
-                    await setCached(deliveryCacheKey(courseCode, year, semester), { modes });
+                    const deliveryKey = deliveryCacheKey(
+                        courseCode,
+                        year,
+                        semester,
+                        "uq"
+                    );
+                    await setCached(deliveryKey, { modes });
                     dDone++;
                     console.log(
-                        `[${dDone + dFailed}/${deliveryTriples.size}] OK delivery:${courseCode}:${year}:${semester}`
+                        `[${dDone + dFailed}/${deliveryTriples.size}] OK ${deliveryKey}`
                     );
                 } else {
                     dFailed++;

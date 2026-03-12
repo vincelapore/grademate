@@ -243,7 +243,8 @@ function HomeContent() {
                 const params = new URLSearchParams({
                     courseCode: code,
                     year: effectiveSemester.year.toString(),
-                    semester: effectiveSemester.semester
+                    semester: effectiveSemester.semester,
+                    university: "uq"
                 });
                 const res = await fetch(
                     `/api/delivery-modes?${params.toString()}`

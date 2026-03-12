@@ -325,13 +325,22 @@ export async function isFailedScrape(cacheKey: string): Promise<boolean> {
     }
 }
 
-/** Extract year from a delivery cache key (delivery:COURSE:YEAR:SEMESTER). Returns undefined if invalid. */
+/**
+ * Extract year from a delivery cache key.
+ * Supports both formats: delivery:university:CODE:YEAR:SEM and (legacy) delivery:CODE:YEAR:SEM.
+ */
 function yearFromDeliveryKey(key: string): number | undefined {
     if (!key.startsWith("delivery:")) return undefined;
     const parts = key.split(":");
-    if (parts.length < 4) return undefined;
-    const y = parseInt(parts[2], 10);
-    return Number.isNaN(y) ? undefined : y;
+    if (parts.length >= 5) {
+        const y = parseInt(parts[3], 10);
+        return Number.isNaN(y) ? undefined : y;
+    }
+    if (parts.length === 4) {
+        const y = parseInt(parts[2], 10);
+        return Number.isNaN(y) ? undefined : y;
+    }
+    return undefined;
 }
 
 const BATCH_SIZE = 100;

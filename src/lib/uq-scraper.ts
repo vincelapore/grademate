@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { AnyNode, Element } from "domhandler";
 import { fetchUqHtml } from "./fetch-uq";
 import type { SemesterSelection } from "./semester";
+import { logger } from "./logger";
 
 type CheerioElement = cheerio.Cheerio<Element>;
 /** Used for variables that receive $() results (which may be AnyNode). */
@@ -28,9 +29,12 @@ export type CourseAssessment = {
 const UQ_COURSE_URL = "https://programs-courses.uq.edu.au/course.html";
 
 async function fetchHTML(url: string): Promise<string> {
-  console.log("[Scraper] Fetching URL:", url);
+  logger.debug("scraper", "fetch_html_start", { url });
   const html = await fetchUqHtml(url);
-  console.log("[Scraper] HTML length:", html.length, "characters");
+  logger.debug("scraper", "fetch_html_success", {
+    url,
+    length: html.length,
+  });
   return html;
 }
 
@@ -38,10 +42,12 @@ export async function fetchCourseAssessment(
   courseCode: string,
   semester?: SemesterSelection,
 ): Promise<CourseAssessment> {
-  console.log("[Scraper] Starting fetchCourseAssessment for:", courseCode);
-  console.log("[Scraper] Semester:", semester);
+  logger.info("scraper", "fetch_course_assessment_start", {
+    courseCode,
+    semester,
+  });
   const url = `${UQ_COURSE_URL}?course_code=${encodeURIComponent(courseCode)}`;
-  console.log("[Scraper] Target URL:", url);
+  logger.debug("scraper", "course_page_target", { url });
 
   const html = await fetchHTML(url);
   const $ = cheerio.load(html);

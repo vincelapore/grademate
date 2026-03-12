@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "backfill": "tsx scripts/backfill-scrape-cache.ts"
+    "backfill": "tsx scripts/backfill-scrape-cache.ts",
+    "backfill:semester": "tsx scripts/backfill-semester.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
