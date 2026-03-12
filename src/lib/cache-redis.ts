@@ -22,7 +22,7 @@ export function scrapeCacheKey(
     year: number,
     semester: string,
     delivery: string,
-    university: string = "uq"
+    university: string
 ): string {
     return `scrape:${university}:${courseCode}:${year}:${normalizeSemester(semester)}:${delivery}`;
 }
@@ -31,7 +31,7 @@ export function deliveryCacheKey(
     courseCode: string,
     year: number,
     semester: string,
-    university: string = "uq"
+    university: string
 ): string {
     return `delivery:${university}:${courseCode}:${year}:${normalizeSemester(semester)}`;
 }

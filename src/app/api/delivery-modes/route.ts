@@ -24,7 +24,14 @@ export async function GET(request: NextRequest) {
     const courseCode = searchParams.get("courseCode")?.trim()?.toUpperCase();
     const yearParam = searchParams.get("year");
     const semesterType = parseSemesterType(searchParams.get("semester"));
-    const universityParam = searchParams.get("university")?.toLowerCase() ?? "uq";
+    const universityParamRaw = searchParams.get("university")?.toLowerCase();
+    if (!universityParamRaw) {
+        return NextResponse.json(
+            { error: `Missing university query parameter. Supported: ${SUPPORTED_UNIVERSITIES.join(", ")}` },
+            { status: 400 }
+        );
+    }
+    const universityParam = universityParamRaw;
 
     if (!isSupportedUniversity(universityParam)) {
         return NextResponse.json(

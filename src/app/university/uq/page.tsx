@@ -288,7 +288,8 @@ function HomeContent() {
                     courseCode: pendingCourse.courseCode,
                     year: pendingCourse.year.toString(),
                     semester: pendingCourse.semester,
-                    delivery: deliveryMode.delivery
+                    delivery: deliveryMode.delivery,
+                    university: "uq"
                 });
                 const res = await fetch(`/api/scrape?${params.toString()}`);
                 if (!res.ok) {
