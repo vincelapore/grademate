@@ -7,6 +7,9 @@ import Link from "next/link";
 type Counts = Record<string, number> & {
     coursesCached?: number;
     coursesCachedCapped?: boolean;
+    coursesCachedByYearSemester?: Record<string, Record<string, number>>;
+    coursesCachedByYearSemesterTotal?: number;
+    coursesCachedByYearSemesterCapped?: boolean;
     recentScrapeErrors?: string[];
     recentDeliveryErrors?: string[];
 };
@@ -53,8 +56,77 @@ const CLIENT_KEYS = [
     "calendar_popup_opened"
 ];
 
+function semesterSortKey(semester: string): number {
+    const s = semester.toLowerCase();
+    if (s.includes("semester 1") || s === "sem 1") return 10;
+    if (s.includes("semester 2") || s === "sem 2") return 20;
+    if (s.includes("summer")) return 30;
+    return 99;
+}
+
+function CoursesCachedBreakdown({
+    breakdown,
+    capped
+}: {
+    breakdown: Record<string, Record<string, number>>;
+    capped?: boolean;
+}) {
+    const years = Object.keys(breakdown)
+        .filter((y) => /^\d{4}$/.test(y))
+        .sort((a, b) => Number(b) - Number(a));
+
+    if (years.length === 0) return null;
+
+    return (
+        <div className='mt-4 rounded-xl border border-slate-700/50 bg-slate-950/40 p-4'>
+            <div className='flex items-center justify-between gap-3'>
+                <p className='text-xs font-medium uppercase tracking-wider text-slate-400'>
+                    Cached courses by semester
+                </p>
+                {capped && (
+                    <span className='text-xs font-medium text-slate-500'>
+                        (approx)
+                    </span>
+                )}
+            </div>
+            <div className='mt-3 overflow-x-auto'>
+                <table className='w-full text-sm'>
+                    <thead>
+                        <tr className='text-left text-xs font-semibold text-slate-400'>
+                            <th className='py-2 pr-4'>Year</th>
+                            <th className='py-2 pr-4'>Semester</th>
+                            <th className='py-2 text-right'>Courses</th>
+                        </tr>
+                    </thead>
+                    <tbody className='divide-y divide-slate-800/60'>
+                        {years.flatMap((year) => {
+                            const semesters = Object.keys(breakdown[year] ?? {}).sort(
+                                (a, b) =>
+                                    semesterSortKey(a) - semesterSortKey(b) ||
+                                    a.localeCompare(b)
+                            );
+                            return semesters.map((semester, idx) => (
+                                <tr key={`${year}-${semester}`}>
+                                    <td className='py-2 pr-4 font-mono text-slate-300'>
+                                        {idx === 0 ? year : ""}
+                                    </td>
+                                    <td className='py-2 pr-4 text-slate-300'>
+                                        {semester}
+                                    </td>
+                                    <td className='py-2 text-right font-mono tabular-nums text-slate-100'>
+                                        {(breakdown[year]?.[semester] ?? 0).toLocaleString()}
+                                    </td>
+                                </tr>
+                            ));
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 function StatCard({
-    statKey,
     label,
     value,
     capped,
@@ -62,7 +134,6 @@ function StatCard({
     isExpanded,
     onToggle
 }: {
-    statKey: string;
     label: string;
     value: number;
     capped?: boolean;
@@ -175,7 +246,6 @@ function Section({
                 {keys.map((key) => (
                     <StatCard
                         key={key}
-                        statKey={key}
                         label={labels[key] ?? key}
                         value={counts[key] ?? 0}
                         detail={keyDetails?.[key]}
@@ -281,17 +351,21 @@ function AnalyticsContent() {
                         </h2>
                         <div className='mb-4'>
                             <StatCard
-                                statKey='coursesCached'
                                 label='Courses cached'
                                 value={counts?.coursesCached ?? 0}
                                 capped={counts?.coursesCachedCapped}
                             />
+                            {counts?.coursesCachedByYearSemester && (
+                                <CoursesCachedBreakdown
+                                    breakdown={counts.coursesCachedByYearSemester}
+                                    capped={counts?.coursesCachedByYearSemesterCapped}
+                                />
+                            )}
                         </div>
                         <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
                             {SCRAPE_KEYS.map((key) => (
                                 <StatCard
                                     key={key}
-                                    statKey={key}
                                     label={SCRAPE_LABELS[key] ?? key}
                                     value={counts?.[key] ?? 0}
                                     detail={

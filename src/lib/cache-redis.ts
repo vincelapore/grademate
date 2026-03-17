@@ -303,6 +303,104 @@ export async function getScrapeCacheCount(
     }
 }
 
+export type ScrapeCacheSemesterBreakdownResult = {
+    /**
+     * Unique courses cached grouped by year -> semester.
+     * Semester values are human-readable (underscores converted to spaces).
+     */
+    breakdown: Record<string, Record<string, number>>;
+    /**
+     * Number of unique (university, courseCode, year, semester) tuples counted.
+     */
+    totalUnique: number;
+    /**
+     * True if we stopped early due to maxKeys cap.
+     */
+    capped: boolean;
+};
+
+/**
+ * Breakdown of unique cached courses into year + semester by scanning scrape:* keys.
+ * Dedupes across delivery modes, since scrape keys include delivery.
+ *
+ * If maxKeys is set, stops after scanning maxKeys keys and sets capped: true.
+ */
+export async function getScrapeCacheSemesterBreakdown(
+    maxKeys?: number
+): Promise<ScrapeCacheSemesterBreakdownResult> {
+    const client = getRedis();
+    if (!client) return { breakdown: {}, totalUnique: 0, capped: false };
+
+    const bucketToSet = new Map<string, Set<string>>();
+    let scanned = 0;
+    let capped = false;
+
+    function add(parsed: NonNullable<ReturnType<typeof parseScrapeCacheKey>>) {
+        if (parsed.year == null || !parsed.semester) return;
+        const year = String(parsed.year);
+        const semester = parsed.semester;
+        const bucket = `${year}::${semester}`;
+        const id = `${parsed.university ?? "uq"}:${parsed.courseCode}:${year}:${semester}`;
+        let set = bucketToSet.get(bucket);
+        if (!set) {
+            set = new Set<string>();
+            bucketToSet.set(bucket, set);
+        }
+        set.add(id);
+    }
+
+    try {
+        if (maxKeys == null || maxKeys <= 0) {
+            const keys = await listScrapeCacheKeys();
+            for (const key of keys) {
+                const parsed = parseScrapeCacheKey(key);
+                if (parsed) add(parsed);
+            }
+        } else {
+            let cursor: number | string = 0;
+            do {
+                const result = (await client.scan(cursor, {
+                    match: "scrape:*",
+                    count: 500
+                })) as [string | number, string[]];
+                const nextCursor = result[0];
+                const keys = Array.isArray(result[1]) ? result[1] : [];
+                for (const key of keys) {
+                    const parsed = parseScrapeCacheKey(key);
+                    if (parsed) add(parsed);
+                }
+                scanned += keys.length;
+                if (scanned >= maxKeys) {
+                    capped = true;
+                    break;
+                }
+                cursor = nextCursor;
+            } while (String(cursor) !== "0");
+        }
+    } catch {
+        // Best-effort fallback: load keys directly, then cap.
+        const keys = await listScrapeCacheKeys();
+        const limited =
+            maxKeys != null && maxKeys > 0 ? keys.slice(0, maxKeys) : keys;
+        capped = maxKeys != null && maxKeys > 0 ? keys.length > maxKeys : false;
+        for (const key of limited) {
+            const parsed = parseScrapeCacheKey(key);
+            if (parsed) add(parsed);
+        }
+    }
+
+    const breakdown: Record<string, Record<string, number>> = {};
+    let totalUnique = 0;
+    for (const [bucket, set] of bucketToSet.entries()) {
+        const [year, semester] = bucket.split("::");
+        if (!breakdown[year]) breakdown[year] = {};
+        breakdown[year][semester] = set.size;
+        totalUnique += set.size;
+    }
+
+    return { breakdown, totalUnique, capped };
+}
+
 /** Add a course+semester to the set of failed scrape attempts (e.g. limit reached). */
 export async function addFailedScrape(cacheKey: string): Promise<void> {
     const client = getRedis();
