@@ -3,11 +3,20 @@ import type { CourseAssessment } from "./uq-scraper";
 import type { GradeBand } from "./grades";
 import type { SemesterSelection } from "./semester";
 
+export type SubAssessmentRow = {
+  name: string;
+  mark: string | null;
+  /** % of course grade for this part; all rows sum to this assessment’s course weight. Omitted in older saves. */
+  weight?: number;
+};
+
 export type CourseState = {
   course: CourseAssessment;
   marks: (string | number | null)[]; // Can be fraction string like "9/10", percentage number, or null
   /** Optional "out of" per assessment; when set, mark input is integer marks and we show "Need N/outOf" */
   outOf?: (number | null)[];
+  /** Per-assessment breakdown rows (calculator), keyed by assessment item index */
+  subAssessments?: Record<number, { rows: SubAssessmentRow[] }>;
   goalGrade: GradeBand;
   semester?: SemesterSelection;
 };

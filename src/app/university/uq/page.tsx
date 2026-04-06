@@ -17,13 +17,20 @@ import {
     parseMarkToPercentage,
     formatMarkDisplay,
     calculateEqualDistributionMarks,
+    aggregateSubAssessmentMarks,
+    formatAggregateMarkForStorage,
     type GradeBand
 } from "@/lib/grades";
+import { isValidMarkInput } from "@/lib/mark-input";
+import { ensureSubAssessmentRows } from "@/lib/sub-assessment";
+import { Calculator } from "lucide-react";
+import { AssessmentCalculatorModal } from "@/components/AssessmentCalculatorModal";
 import {
     decodeState,
     encodeState,
     type AppState,
-    type CourseState
+    type CourseState,
+    type SubAssessmentRow
 } from "@/lib/state";
 import type { CourseAssessment } from "@/lib/uq-scraper";
 import {
@@ -93,6 +100,10 @@ function HomeContent() {
         boolean[]
     >([]);
     const [hurdlePopup, setHurdlePopup] = useState<{
+        courseIdx: number;
+        itemIdx: number;
+    } | null>(null);
+    const [assessmentCalculatorPopup, setAssessmentCalculatorPopup] = useState<{
         courseIdx: number;
         itemIdx: number;
     } | null>(null);
@@ -332,27 +343,11 @@ function HomeContent() {
 
     const updateMark = useCallback(
         (courseIndex: number, itemIndex: number, value: string) => {
-            // Allow empty string, fractions like "9/10", percentages like "90", or "/XX" patterns
             const trimmed = value.trim();
             const markValue = trimmed === "" ? null : trimmed;
 
-            // Validate: if it's not empty and not a valid format, don't update
-            if (markValue != null) {
-                // Allow "/" and "/XX" patterns (user typing "/50")
-                if (markValue.match(/^\/\d*$/)) {
-                    // Allow it - user is typing "/XX"
-                } else if (
-                    // Allow full fraction "85/100" or partial "85/" / "85/1" so user can type "85/100"
-                    markValue.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d*(?:\.\d+)?)$/)
-                ) {
-                    // Allow it - full or partial fraction
-                } else {
-                    // Check if it's a valid number (percentage)
-                    const num = parseFloat(markValue);
-                    if (Number.isNaN(num) || num < 0 || num > 100) {
-                        return; // Invalid, don't update
-                    }
-                }
+            if (markValue != null && !isValidMarkInput(markValue)) {
+                return;
             }
 
             setState((prev) => {
@@ -366,6 +361,41 @@ function HomeContent() {
             });
         },
         []
+    );
+
+    const updateSubAssessmentRows = useCallback(
+        (courseIndex: number, itemIndex: number, rows: SubAssessmentRow[]) => {
+            setState((prev) => {
+                const courses = [...prev.courses];
+                const course = { ...courses[courseIndex] };
+                const sub = { ...(course.subAssessments ?? {}) };
+                sub[itemIndex] = { rows };
+                course.subAssessments = sub;
+                courses[courseIndex] = course;
+                return { ...prev, courses };
+            });
+        },
+        []
+    );
+
+    const applySubAssessmentRows = useCallback(
+        (courseIndex: number, itemIndex: number, rows: SubAssessmentRow[]) => {
+            updateSubAssessmentRows(courseIndex, itemIndex, rows);
+            const agg = aggregateSubAssessmentMarks(
+                rows.map((r) => ({
+                    mark: r.mark,
+                    weight:
+                        typeof r.weight === "number" && !Number.isNaN(r.weight)
+                            ? r.weight
+                            : 0
+                }))
+            );
+            if (agg != null) {
+                const s = formatAggregateMarkForStorage(agg);
+                if (s) updateMark(courseIndex, itemIndex, s);
+            }
+        },
+        [updateMark, updateSubAssessmentRows]
     );
 
     const updateGoal = useCallback((courseIndex: number, goal: GradeBand) => {
@@ -1267,6 +1297,84 @@ function HomeContent() {
                                                                 <div className='text-sm font-semibold text-slate-100'>
                                                                     {item.name}
                                                                 </div>
+                                                                {!isPassFail && (
+                                                                    <button
+                                                                        type='button'
+                                                                        onClick={() => {
+                                                                            const course =
+                                                                                state
+                                                                                    .courses[
+                                                                                    idx
+                                                                                ];
+                                                                            const assessmentCourseWeight =
+                                                                                typeof item.weight ===
+                                                                                "number"
+                                                                                    ? Math.round(
+                                                                                          item.weight
+                                                                                      )
+                                                                                    : 0;
+                                                                            const raw =
+                                                                                course
+                                                                                    ?.subAssessments?.[
+                                                                                    i
+                                                                                ]
+                                                                                    ?.rows;
+                                                                            const normalized =
+                                                                                ensureSubAssessmentRows(
+                                                                                    raw?.length
+                                                                                        ? raw.map(
+                                                                                              (
+                                                                                                  r
+                                                                                              ) => ({
+                                                                                                  name: r.name,
+                                                                                                  mark: r.mark,
+                                                                                                  weight:
+                                                                                                      (
+                                                                                                          r as {
+                                                                                                              weight?: number;
+                                                                                                          }
+                                                                                                      )
+                                                                                                          .weight
+                                                                                              })
+                                                                                          )
+                                                                                        : [
+                                                                                              {
+                                                                                                  name: "Part 1",
+                                                                                                  mark: null
+                                                                                              }
+                                                                                          ],
+                                                                                    assessmentCourseWeight
+                                                                                );
+                                                                            updateSubAssessmentRows(
+                                                                                idx,
+                                                                                i,
+                                                                                normalized
+                                                                            );
+                                                                            setAssessmentCalculatorPopup(
+                                                                                {
+                                                                                    courseIdx:
+                                                                                        idx,
+                                                                                    itemIdx:
+                                                                                        i
+                                                                                }
+                                                                            );
+                                                                            trackAnalytics(
+                                                                                "assessment_calculator_opened"
+                                                                            );
+                                                                        }}
+                                                                        className='inline-flex shrink-0 items-center rounded-md border border-slate-600/50 bg-slate-900/50 p-1 text-slate-400 transition-colors hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300'
+                                                                        title='Calculator for this assessment'
+                                                                        aria-label='Open assessment calculator'
+                                                                    >
+                                                                        <Calculator
+                                                                            className='h-3.5 w-3.5'
+                                                                            strokeWidth={
+                                                                                1.5
+                                                                            }
+                                                                            aria-hidden
+                                                                        />
+                                                                    </button>
+                                                                )}
                                                                 {(item.isHurdle ||
                                                                     item.hurdleRequirements ||
                                                                     item.hurdleThreshold != null) && (
@@ -1895,6 +2003,71 @@ function HomeContent() {
                                 </div>
                             </div>
                         </div>
+                    );
+                })()}
+
+            {/* Per-assessment calculator */}
+            {assessmentCalculatorPopup != null &&
+                (() => {
+                    const c = state.courses[assessmentCalculatorPopup.courseIdx];
+                    const itemIdx = assessmentCalculatorPopup.itemIdx;
+                    if (!c) return null;
+                    const it = c.course.items[itemIdx];
+                    if (!it) return null;
+                    const wi = c.course.items.map((x, j) => ({
+                        weight: x.weight,
+                        mark: c.marks[j] ?? null
+                    }));
+                    const goalTarget = GRADE_THRESHOLDS[c.goalGrade];
+                    const courseFillerMarks = calculateEqualDistributionMarks(
+                        wi,
+                        goalTarget
+                    );
+                    const tablePlaceholderPercent =
+                        it.weight === "pass/fail"
+                            ? null
+                            : (courseFillerMarks[itemIdx] ?? null);
+                    const assessmentCourseWeight =
+                        typeof it.weight === "number"
+                            ? Math.round(it.weight)
+                            : 0;
+                    const rows: SubAssessmentRow[] = ensureSubAssessmentRows(
+                        c.subAssessments?.[itemIdx]?.rows?.length
+                            ? c.subAssessments[itemIdx]!.rows.map((r) => ({
+                                  name: r.name,
+                                  mark: r.mark,
+                                  weight: (r as { weight?: number }).weight
+                              }))
+                            : [{ name: "Part 1", mark: null }],
+                        assessmentCourseWeight
+                    );
+                    return (
+                        <AssessmentCalculatorModal
+                            open
+                            onClose={() => setAssessmentCalculatorPopup(null)}
+                            courseCode={c.course.courseCode}
+                            assessmentName={it.name}
+                            goalMarkPercent={tablePlaceholderPercent}
+                            assessmentCourseWeightPercent={
+                                assessmentCourseWeight
+                            }
+                            courseMark={c.marks[itemIdx] ?? null}
+                            onCourseMarkChange={(v) =>
+                                updateMark(
+                                    assessmentCalculatorPopup.courseIdx,
+                                    itemIdx,
+                                    v
+                                )
+                            }
+                            rows={rows}
+                            onRowsChange={(next) =>
+                                applySubAssessmentRows(
+                                    assessmentCalculatorPopup.courseIdx,
+                                    itemIdx,
+                                    next
+                                )
+                            }
+                        />
                     );
                 })()}
 

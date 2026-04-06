@@ -129,6 +129,78 @@ export function formatMarkDisplay(mark: string | number | null | undefined): { d
  * - Target is impossible to achieve
  * - Target is already exceeded
  */
+/**
+ * Weighted overall % for this assessment. Returns null unless **every** row has a valid mark.
+ */
+export function aggregateSubAssessmentMarks(
+  rows: { mark: string | null | undefined; weight: number }[],
+): { mode: "percent"; value: number } | null {
+  if (rows.length === 0) return null;
+
+  const wSum = rows.reduce(
+    (s, r) => s + (typeof r.weight === "number" && r.weight > 0 ? r.weight : 0),
+    0
+  );
+  if (wSum <= 0) return null;
+
+  for (const r of rows) {
+    const str = r.mark == null ? "" : String(r.mark).trim();
+    if (str === "") return null;
+    const p = parseMarkToPercentage(r.mark);
+    if (p == null || Number.isNaN(p)) return null;
+  }
+
+  let weightedPct = 0;
+  for (const r of rows) {
+    const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
+    const p = parseMarkToPercentage(r.mark)!;
+    weightedPct += (p * w) / wSum;
+  }
+
+  return { mode: "percent", value: weightedPct };
+}
+
+/**
+ * Best-case weighted % on this assessment if every part without a valid mark scores 100%.
+ * Same weighting as aggregateSubAssessmentMarks (weights are course % shares of this item).
+ */
+export function maxAchievableSubAssessmentPercent(
+  rows: { mark: string | null | undefined; weight: number }[],
+): number | null {
+  const wSum = rows.reduce(
+    (s, r) => s + (typeof r.weight === "number" && r.weight > 0 ? r.weight : 0),
+    0
+  );
+  if (wSum <= 0 || rows.length === 0) return null;
+
+  let acc = 0;
+  for (const r of rows) {
+    const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
+    if (w <= 0) continue;
+    const str = r.mark == null ? "" : String(r.mark).trim();
+    if (str === "") {
+      acc += w * 100;
+      continue;
+    }
+    const p = parseMarkToPercentage(r.mark);
+    if (p == null || Number.isNaN(p)) {
+      acc += w * 100;
+    } else {
+      acc += w * p;
+    }
+  }
+  return acc / wSum;
+}
+
+export function formatAggregateMarkForStorage(
+  agg: ReturnType<typeof aggregateSubAssessmentMarks>,
+): string | null {
+  if (agg == null) return null;
+  const v = agg.value;
+  const rounded = Math.round(v * 10) / 10;
+  return Number.isInteger(rounded) ? String(Math.round(v)) : rounded.toFixed(1);
+}
+
 export function calculateEqualDistributionMarks(
   items: WeightedMark[],
   targetPercent: number,
