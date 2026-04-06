@@ -11,8 +11,8 @@
     "backfill:semester": "tsx scripts/backfill-semester.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/ssr": "^0.10.0",
+    "@supabase/supabase-js": "^2.101.1",
     "@upstash/redis": "^1.36.2",
     "@vercel/analytics": "^1.6.1",
     "cheerio": "^1.2.0",

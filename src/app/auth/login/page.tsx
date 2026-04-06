@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,6 +35,26 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    setLoading(true);
+
+    const origin = window.location.origin;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  }
+
+  const urlError = searchParams.get("error");
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
@@ -48,6 +70,21 @@ export default function LoginPage() {
           <h2 className="mb-6 text-xl font-semibold text-slate-200">
             Sign in to your account
           </h2>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="mb-5 w-full rounded-lg border border-slate-700 bg-slate-900/30 px-4 py-2.5 font-medium text-slate-100 transition-colors hover:bg-slate-900/60 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue with Google
+          </button>
+
+          <div className="mb-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-xs text-slate-500">or</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -86,9 +123,9 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && (
+            {(urlError || error) && (
               <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-                {error}
+                {urlError ?? error}
               </div>
             )}
 
