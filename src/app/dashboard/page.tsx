@@ -3,6 +3,7 @@ import { DashboardGradeSummaryLive } from "@/components/DashboardGradeSummaryLiv
 import { CourseCard } from "@/components/CourseCard";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import type { SemesterType } from "@/lib/semester";
+import { uqSemesterIsoRange } from "@/lib/uqSemesterCalendar";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,11 @@ export default async function DashboardPage() {
 
   if (!semester) return null;
 
+  const { start: semesterStart, end: semesterEnd } = uqSemesterIsoRange(
+    semester.year,
+    semester.semester,
+  );
+
   const { count: semesterCount } = await supabase
     .from("semesters")
     .select("id", { count: "exact", head: true })
@@ -99,12 +105,17 @@ export default async function DashboardPage() {
       </h1>
 
       <DashboardGradeSummaryLive
+        semesterStart={semesterStart}
+        semesterEnd={semesterEnd}
         enrolments={(enrolments ?? []).map((e) => ({
           id: e.id,
+          course_code: e.course_code,
+          course_name: e.course_name,
           credit_points: e.credit_points,
           target_grade: e.target_grade,
           assessment_results: (e.assessment_results ?? []).map((a) => ({
             id: a.id,
+            assessment_name: a.assessment_name,
             weighting: a.weighting,
             mark: a.mark,
             due_date: a.due_date,

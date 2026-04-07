@@ -8,10 +8,14 @@ import {
   countAssessmentsDueThisWeek,
 } from "@/lib/calculations/gpa";
 import { DashboardGradeSummary } from "@/components/DashboardGradeSummary";
+import HellWeekCalendar, {
+  type HellWeekAssessment,
+} from "@/components/HellWeekCalendar";
 import { StatsRow } from "@/components/StatsRow";
 
 type AssessmentRow = {
   id: string;
+  assessment_name: string;
   weighting: number;
   mark: string | null;
   due_date: string | null;
@@ -19,6 +23,8 @@ type AssessmentRow = {
 
 type EnrolmentRow = {
   id: string;
+  course_code: string;
+  course_name: string;
   credit_points: number;
   target_grade: number | null;
   assessment_results: AssessmentRow[];
@@ -42,10 +48,15 @@ function isMarkEventDetail(x: unknown): x is MarkEventDetail {
 
 export function DashboardGradeSummaryLive({
   enrolments,
+  semesterStart,
+  semesterEnd,
 }: {
   enrolments: EnrolmentRow[];
+  semesterStart: string;
+  semesterEnd: string;
 }) {
   const [local, setLocal] = useState<EnrolmentRow[]>(enrolments);
+  const [hellOpen, setHellOpen] = useState(false);
 
   // If the server re-renders with new data (refresh/navigation), sync baseline.
   useEffect(() => {
@@ -100,6 +111,24 @@ export function DashboardGradeSummaryLive({
     [local],
   );
 
+  const hellAssessments: HellWeekAssessment[] = useMemo(() => {
+    const out: HellWeekAssessment[] = [];
+    for (const e of local) {
+      for (const a of e.assessment_results ?? []) {
+        if (!a.due_date) continue;
+        out.push({
+          id: a.id,
+          assessment_name: a.assessment_name,
+          weighting: a.weighting,
+          due_date: a.due_date,
+          course_code: e.course_code,
+          course_name: e.course_name,
+        });
+      }
+    }
+    return out;
+  }, [local]);
+
   return (
     <>
       <DashboardGradeSummary
@@ -112,7 +141,16 @@ export function DashboardGradeSummaryLive({
         degreeProgressPercent={
           Number.isFinite(degreeProgressPercent) ? degreeProgressPercent : 0
         }
+        onViewHellWeeks={() => setHellOpen(true)}
       />
+      {hellOpen ? (
+        <HellWeekCalendar
+          assessments={hellAssessments}
+          semesterStart={semesterStart}
+          semesterEnd={semesterEnd}
+          onClose={() => setHellOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

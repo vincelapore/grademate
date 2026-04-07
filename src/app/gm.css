@@ -1605,3 +1605,39 @@ a.gm-dash-btn {
   background: var(--color-background-secondary);
   padding: 1.25rem;
 }
+
+/* Hell Week calendar: desktop grid vs mobile list */
+.hell-week-cal-mobile {
+  display: none;
+}
+.hell-week-cal-desktop {
+  display: block;
+}
+@media (max-width: 640px) {
+  .hell-week-cal-mobile {
+    display: block;
+  }
+  .hell-week-cal-desktop {
+    display: none;
+  }
+}
+
+.gm-dash-stat-hell-link {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gm-dash-stat-hell-link:hover {
+    color: var(--color-text-secondary);
+  }
+}

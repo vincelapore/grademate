@@ -4,10 +4,12 @@ export function StatsRow({
   gpa,
   dueThisWeek,
   degreeProgressPercent,
+  onViewHellWeeks,
 }: {
   gpa: number | null;
   dueThisWeek: number;
   degreeProgressPercent: number;
+  onViewHellWeeks?: () => void;
 }) {
   return (
     <div className="gm-dash-stats">
@@ -24,6 +26,15 @@ export function StatsRow({
         >
           {dueThisWeek}
         </div>
+        {onViewHellWeeks ? (
+          <button
+            type="button"
+            className="gm-dash-stat-hell-link"
+            onClick={onViewHellWeeks}
+          >
+            View hell weeks
+          </button>
+        ) : null}
       </div>
       <div className="gm-dash-stat">
         <div className="gm-dash-stat-label">Degree progress</div>
