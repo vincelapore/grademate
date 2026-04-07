@@ -4,6 +4,7 @@ import { DashboardSignOutButton } from "@/components/DashboardSignOutButton";
 import { DashboardSettingsUpgrade } from "@/components/DashboardSettingsUpgrade";
 import { DashboardCalendarReset } from "@/components/DashboardCalendarReset";
 import { GmLogo } from "@/components/gm/GmLogo";
+import { DashboardDeleteAccount } from "@/components/DashboardDeleteAccount";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,9 @@ export default async function DashboardSettingsPage() {
           >
             Managed with your Grademate login.
           </p>
+          <div style={{ marginTop: 14 }}>
+            <DashboardDeleteAccount />
+          </div>
         </section>
 
         <section className="gm-dash-card">

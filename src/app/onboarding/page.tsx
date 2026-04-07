@@ -17,6 +17,7 @@ export default async function OnboardingPage() {
   const { data: semesters } = await supabase
     .from("semesters")
     .select("id")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1);
 

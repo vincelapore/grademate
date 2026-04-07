@@ -19,6 +19,9 @@ type AssessmentRow = {
   weighting: number;
   mark: string | null;
   due_date: string | null;
+  is_hurdle?: boolean | null;
+  hurdle_threshold?: number | null;
+  hurdle_requirements?: string | null;
 };
 
 type EnrolmentRow = {

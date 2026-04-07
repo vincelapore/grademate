@@ -16,10 +16,14 @@ type PendingCourse = {
   targetGrade: number;
   profileUrl: string | null;
   university: string;
+  hurdleInformation?: string | null;
   assessments: Array<{
     assessmentName: string;
     weighting: number;
     dueDate: string | null;
+    isHurdle?: boolean;
+    hurdleThreshold?: number | null;
+    hurdleRequirements?: string | null;
   }>;
 };
 
@@ -189,6 +193,15 @@ export function AddCourseSearch({
             assessmentName: item.name,
             weighting: w,
             dueDate: dueDateToIso(item.dueDate ?? null),
+            isHurdle: Boolean(item.isHurdle),
+            hurdleThreshold:
+              typeof item.hurdleThreshold === "number" && Number.isFinite(item.hurdleThreshold)
+                ? item.hurdleThreshold
+                : null,
+            hurdleRequirements:
+              typeof item.hurdleRequirements === "string" && item.hurdleRequirements.trim()
+                ? item.hurdleRequirements.trim()
+                : null,
           };
         })
         .filter(Boolean) as PendingCourse["assessments"];
@@ -202,6 +215,11 @@ export function AddCourseSearch({
           targetGrade: 7,
           profileUrl,
           university,
+          hurdleInformation:
+            typeof suggestion.hurdleInformation === "string" &&
+            suggestion.hurdleInformation.trim()
+              ? suggestion.hurdleInformation.trim()
+              : null,
           assessments,
         },
       ]);

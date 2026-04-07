@@ -25,10 +25,14 @@ type CoursePayload = {
   targetGrade: number;
   profileUrl?: string | null;
   university?: string | null;
+  hurdleInformation?: string | null;
   assessments: Array<{
     assessmentName: string;
     weighting: number;
     dueDate: string | null;
+    isHurdle?: boolean;
+    hurdleThreshold?: number | null;
+    hurdleRequirements?: string | null;
   }>;
 };
 
@@ -116,6 +120,10 @@ export async function POST(request: Request) {
         target_grade: Number(c.targetGrade ?? 7),
         profile_url,
         university,
+        hurdle_information:
+          typeof c.hurdleInformation === "string" && c.hurdleInformation.trim()
+            ? c.hurdleInformation.trim()
+            : null,
       })
       .select("id")
       .single();
@@ -135,6 +143,15 @@ export async function POST(request: Request) {
         weighting: Number(a.weighting ?? 0),
         mark: null,
         due_date: a.dueDate ?? null,
+        is_hurdle: Boolean(a.isHurdle),
+        hurdle_threshold:
+          typeof a.hurdleThreshold === "number" && Number.isFinite(a.hurdleThreshold)
+            ? Math.round(a.hurdleThreshold)
+            : null,
+        hurdle_requirements:
+          typeof a.hurdleRequirements === "string" && a.hurdleRequirements.trim()
+            ? a.hurdleRequirements.trim()
+            : null,
       }))
       .filter((r) => r.assessment_name && Number.isFinite(r.weighting) && r.weighting > 0);
 

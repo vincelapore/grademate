@@ -16,6 +16,9 @@ type CourseEditAssessment = {
   weighting: number;
   mark: string | null;
   due_date: string | null;
+  is_hurdle?: boolean | null;
+  hurdle_threshold?: number | null;
+  hurdle_requirements?: string | null;
 };
 
 type AssessmentFormRow = {
@@ -24,6 +27,9 @@ type AssessmentFormRow = {
   assessment_name: string;
   weighting: string;
   due_date: string;
+  is_hurdle: boolean;
+  hurdle_threshold: string;
+  hurdle_requirements: string;
 };
 
 function formRowsFromAssessments(list: CourseEditAssessment[]): AssessmentFormRow[] {
@@ -33,6 +39,10 @@ function formRowsFromAssessments(list: CourseEditAssessment[]): AssessmentFormRo
     assessment_name: a.assessment_name,
     weighting: String(a.weighting),
     due_date: a.due_date ?? "",
+    is_hurdle: Boolean(a.is_hurdle),
+    hurdle_threshold:
+      a.hurdle_threshold == null ? "" : String(a.hurdle_threshold),
+    hurdle_requirements: a.hurdle_requirements ?? "",
   }));
 }
 
@@ -149,6 +159,9 @@ export function CourseEditModal({
         assessment_name: "",
         weighting: "10",
         due_date: "",
+        is_hurdle: false,
+        hurdle_threshold: "",
+        hurdle_requirements: "",
       },
     ]);
   }
@@ -200,6 +213,8 @@ export function CourseEditModal({
         assessment_name: r.assessment_name.trim(),
         weighting: parseFloat(r.weighting),
         due_date: r.due_date.trim() || null,
+        hurdle_threshold: r.hurdle_threshold.trim(),
+        hurdle_requirements: r.hurdle_requirements.trim(),
       }))
       .filter(
         (r) =>
@@ -237,6 +252,10 @@ export function CourseEditModal({
 
       for (const r of normalizedRows) {
         const due = r.due_date;
+        const hurdleThreshold =
+          r.hurdle_threshold === "" ? null : Number(r.hurdle_threshold);
+        const hurdleRequirements =
+          r.hurdle_requirements === "" ? null : r.hurdle_requirements;
         if (r.id) {
           const { error: upErr } = await supabase
             .from("assessment_results")
@@ -244,6 +263,12 @@ export function CourseEditModal({
               assessment_name: r.assessment_name,
               weighting: r.weighting,
               due_date: due,
+              is_hurdle: r.is_hurdle,
+              hurdle_threshold:
+                hurdleThreshold != null && Number.isFinite(hurdleThreshold)
+                  ? Math.round(hurdleThreshold)
+                  : null,
+              hurdle_requirements: hurdleRequirements,
             })
             .eq("id", r.id);
           if (upErr) throw upErr;
@@ -256,6 +281,12 @@ export function CourseEditModal({
               weighting: r.weighting,
               mark: null,
               due_date: due,
+              is_hurdle: r.is_hurdle,
+              hurdle_threshold:
+                hurdleThreshold != null && Number.isFinite(hurdleThreshold)
+                  ? Math.round(hurdleThreshold)
+                  : null,
+              hurdle_requirements: hurdleRequirements,
             });
           if (inErr) throw inErr;
         }
@@ -582,6 +613,73 @@ export function CourseEditModal({
                             className="gm-dash-input mt-1"
                           />
                         </div>
+                        <div className="sm:col-span-2">
+                          <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+                            <input
+                              type="checkbox"
+                              checked={row.is_hurdle}
+                              onChange={(e) =>
+                                setEditRows((rows) =>
+                                  rows.map((r) =>
+                                    r.clientKey === row.clientKey
+                                      ? { ...r, is_hurdle: e.target.checked }
+                                      : r,
+                                  ),
+                                )
+                              }
+                            />
+                            Hurdle
+                          </label>
+                        </div>
+                        {(row.is_hurdle ||
+                          row.hurdle_threshold.trim() !== "" ||
+                          row.hurdle_requirements.trim() !== "") && (
+                          <>
+                            <div>
+                              <label className="gm-dash-field-label-block text-[var(--color-text-tertiary)]">
+                                Pass threshold (%)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={row.hurdle_threshold}
+                                onChange={(e) =>
+                                  setEditRows((rows) =>
+                                    rows.map((r) =>
+                                      r.clientKey === row.clientKey
+                                        ? { ...r, hurdle_threshold: e.target.value }
+                                        : r,
+                                    ),
+                                  )
+                                }
+                                className="gm-dash-input mt-1 tabular-nums"
+                                placeholder="e.g. 50"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="gm-dash-field-label-block text-[var(--color-text-tertiary)]">
+                                Hurdle requirements
+                              </label>
+                              <textarea
+                                value={row.hurdle_requirements}
+                                onChange={(e) =>
+                                  setEditRows((rows) =>
+                                    rows.map((r) =>
+                                      r.clientKey === row.clientKey
+                                        ? { ...r, hurdle_requirements: e.target.value }
+                                        : r,
+                                    ),
+                                  )
+                                }
+                                className="gm-dash-input mt-1"
+                                rows={3}
+                                placeholder="e.g. Must score at least 50% on the final exam."
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

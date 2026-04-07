@@ -1716,6 +1716,171 @@ a.gm-dash-btn {
   background: rgba(254, 242, 242, 0.35);
 }
 
+.gm-dash-components-add {
+  width: 100%;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px dashed var(--color-border-secondary);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gm-dash-components-add:hover {
+  border-color: var(--gm-accent);
+  color: var(--gm-accent);
+  background: rgba(29, 158, 117, 0.06);
+}
+
+/* --- Inline parts editor (assessment dropdown) --- */
+.gm-dash-parts {
+  padding: 6px;
+}
+
+.gm-dash-parts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.gm-dash-parts-row {
+  display: grid;
+  /* Match the dashboard table columns: Assessment | Weight | Due | Mark */
+  grid-template-columns: minmax(0, 1fr) 84px 120px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.gm-dash-parts-due {
+  height: 34px;
+}
+
+.gm-dash-parts-mark {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.gm-dash-parts-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-dash-parts-input {
+  height: 34px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: 12px;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.gm-dash-parts-input:focus {
+  outline: none;
+  border-color: var(--gm-accent);
+  box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.16);
+}
+
+.gm-dash-parts-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Remove number input spinners (calmer UI) */
+.gm-dash-parts-num::-webkit-outer-spin-button,
+.gm-dash-parts-num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.gm-dash-parts-num[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.gm-dash-parts-delete {
+  width: 36px;
+  height: 34px;
+  border-radius: 12px;
+  border: 0.5px solid var(--color-border-secondary);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.gm-dash-parts-delete:hover:not(:disabled) {
+  border-color: rgba(185, 28, 28, 0.35);
+  color: #b91c1c;
+  background: rgba(254, 242, 242, 0.95);
+}
+
+.gm-dash-parts-delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gm-dash-parts-add {
+  height: 36px;
+  border-radius: 12px;
+  border: 1px dashed var(--color-border-secondary);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gm-dash-parts-add:hover {
+  border-color: var(--gm-accent);
+  color: var(--gm-accent);
+  background: rgba(29, 158, 117, 0.06);
+}
+
+.gm-dash-parts-warn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+  padding: 2px 2px 0;
+}
+
+.gm-dash-parts-ok {
+  height: 0;
+}
+
+.gm-dash-parts-split {
+  width: 100%;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px dashed var(--color-border-secondary);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gm-dash-parts-split:hover {
+  border-color: var(--gm-accent);
+  color: var(--gm-accent);
+  background: rgba(29, 158, 117, 0.06);
+}
+
+@media (max-width: 720px) {
+  .gm-dash-parts-row {
+    grid-template-columns: minmax(0, 1fr) 72px 96px 1fr;
+  }
+}
+
 @media (max-width: 720px) {
   .gm-dash-stats {
     grid-template-columns: 1fr;
