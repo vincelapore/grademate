@@ -8,10 +8,12 @@ import { GmLogo } from "@/components/gm/GmLogo";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import type { SemesterType } from "@/lib/semester";
 import { AddCourseModal } from "@/components/AddCourseModal";
+import { DashboardCalendarSubscribe } from "@/components/DashboardCalendarSubscribe";
 
 export function DashboardHeader({
   addCourse,
   proGate,
+  calendarSubscribe,
 }: {
   addCourse?: {
     semesterId: string;
@@ -23,6 +25,10 @@ export function DashboardHeader({
     plan: "free" | "pro";
     semesterCount: number;
   };
+  calendarSubscribe?: {
+    feedUrl: string;
+    plan: "free" | "pro";
+  } | null;
 }) {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showAddCourse, setShowAddCourse] = useState(false);
@@ -61,6 +67,12 @@ export function DashboardHeader({
         </div>
 
         <div className="gm-dash-header-right">
+          {calendarSubscribe ? (
+            <DashboardCalendarSubscribe
+              feedUrl={calendarSubscribe.feedUrl}
+              plan={calendarSubscribe.plan}
+            />
+          ) : null}
           <Link href="/dashboard/settings" className="gm-dash-btn">
             Settings
           </Link>

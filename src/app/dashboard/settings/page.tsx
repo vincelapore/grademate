@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardSignOutButton } from "@/components/DashboardSignOutButton";
 import { DashboardSettingsUpgrade } from "@/components/DashboardSettingsUpgrade";
+import { DashboardCalendarReset } from "@/components/DashboardCalendarReset";
 import { GmLogo } from "@/components/gm/GmLogo";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +138,45 @@ export default async function DashboardSettingsPage() {
               <DashboardSettingsUpgrade />
             </div>
           ) : null}
+        </section>
+
+        <section className="gm-dash-card">
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 13,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--color-text-tertiary)",
+            }}
+          >
+            Calendar
+          </h2>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            Subscribe from the dashboard with the calendar button. Reset your
+            secret link if it was shared accidentally.
+          </p>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: "var(--color-text-tertiary)",
+            }}
+          >
+            This will break any existing calendar subscriptions.
+          </p>
+          <div style={{ marginTop: 12 }}>
+            <DashboardCalendarReset />
+          </div>
         </section>
       </div>
     </main>

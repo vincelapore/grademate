@@ -15,6 +15,11 @@ ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free'
 CHECK (plan IN ('free', 'pro'));
 
+-- Secret URL token for read-only iCal subscription (/api/calendar/[token].ics)
+ALTER TABLE public.users
+-- NOTE: calendar_token is managed via `supabase/migrations/*` so it can be applied
+-- with `supabase db push`. See migration: 20260407150900_add_users_calendar_token.sql.
+
 -- User's saved courses/semesters
 CREATE TABLE saved_courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

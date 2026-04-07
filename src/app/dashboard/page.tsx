@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getSiteBaseUrl } from "@/lib/siteBaseUrl";
 import { DashboardGradeSummaryLive } from "@/components/DashboardGradeSummaryLive";
 import { CourseCard } from "@/components/CourseCard";
 import { DashboardHeader } from "@/components/DashboardHeader";
@@ -16,6 +17,7 @@ type DbSemester = {
 
 type DbUser = {
   plan: string | null;
+  calendar_token: string | null;
 };
 
 function semesterIntToLabel(n: number): SemesterType {
@@ -52,10 +54,19 @@ export default async function DashboardPage() {
 
   const { data: userRow } = await supabase
     .from("users")
-    .select("plan")
+    .select("plan, calendar_token")
     .eq("id", user.id)
     .maybeSingle<DbUser>();
-  const plan = userRow?.plan === "pro" ? "pro" : "free";
+  const plan: "free" | "pro" =
+    userRow?.plan === "pro" ? "pro" : "free";
+  const baseUrl = await getSiteBaseUrl();
+  const calendarSubscribe =
+    userRow?.calendar_token != null && userRow.calendar_token.length > 0
+      ? {
+          feedUrl: `${baseUrl}/api/calendar/${userRow.calendar_token}.ics`,
+          plan,
+        }
+      : null;
 
   const { data: semester } = await supabase
     .from("semesters")
@@ -98,6 +109,7 @@ export default async function DashboardPage() {
           plan,
           semesterCount: semesterCount ?? 1,
         }}
+        calendarSubscribe={calendarSubscribe}
       />
 
       <h1 className="gm-dash-page-title">
