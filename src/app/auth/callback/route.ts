@@ -4,14 +4,43 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const oauthError = searchParams.get("error");
+  const oauthErrorDescription = searchParams.get("error_description");
+  const next = searchParams.get("next") ?? "/dashboard";
+
+  if (oauthError) {
+    const msg = oauthErrorDescription
+      ? `${oauthError}: ${oauthErrorDescription}`
+      : oauthError;
+    return NextResponse.redirect(
+      `${origin}/auth/login?error=${encodeURIComponent(msg)}`
+    );
+  }
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.id) {
+        // Create on first sign-in (idempotent).
+        await supabase
+          .from("users")
+          .upsert(
+            { id: user.id, email: user.email ?? null },
+            { onConflict: "id" },
+          );
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
+
+    return NextResponse.redirect(
+      `${origin}/auth/login?error=${encodeURIComponent(error.message)}`
+    );
   }
 
   return NextResponse.redirect(`${origin}/auth/login?error=Could not authenticate`);

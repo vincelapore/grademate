@@ -1,0 +1,1103 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { ChevronDown, MoreVertical, X } from "lucide-react";
+import { CourseEditModal } from "@/components/CourseEditModal";
+import { safeHttpUrl } from "@/lib/profile-url";
+import { isValidMarkInput } from "@/lib/mark-input";
+import { formatDueDateForDisplay } from "@/lib/format-due-date";
+import {
+  calculateEqualDistributionMarks,
+  calculateRequiredMarkForTarget,
+  calculateWeightedTotal,
+  formatMarkDisplay,
+  GRADE_BOUNDARY_PERCENTS,
+  GRADE_THRESHOLDS,
+  parseMarkToPercentage,
+  percentToGradeBand,
+} from "@/lib/grades";
+
+export type AssessmentSeriesSlot = "full" | "left" | "right";
+
+type Assessment = {
+  id: string;
+  assessment_name: string;
+  weighting: number;
+  mark: string | null;
+  due_date: string | null;
+  /** When multi-part assessments are modeled: two rows with `left` + `right` render as one paired circle. */
+  series_slot?: AssessmentSeriesSlot;
+};
+
+function postgrestErrorMessage(e: unknown): string {
+  if (e && typeof e === "object" && "message" in e) {
+    const m = (e as { message: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
+  if (e instanceof Error) return e.message;
+  return "Could not remove course.";
+}
+
+function emitMarkChange(detail: {
+  enrolmentId: string;
+  assessmentId: string;
+  mark: string | null;
+}) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("gm:mark-change", { detail }));
+}
+
+/** YYYY-MM-DD → sort key; missing/invalid dates sort last. */
+function dueDateSortKey(due: string | null): number {
+  if (due == null || !String(due).trim()) return Number.POSITIVE_INFINITY;
+  const m = String(due).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  const t = Date.parse(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
+  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+}
+
+function sortAssessmentsByDueDate(list: Assessment[]): Assessment[] {
+  return [...list].sort((a, b) => {
+    const da = dueDateSortKey(a.due_date);
+    const db = dueDateSortKey(b.due_date);
+    if (da !== db) return da - db;
+    return a.assessment_name.localeCompare(b.assessment_name);
+  });
+}
+
+/** Word-boundary match so titles like "example" are not treated as exams. */
+function isExamAssessmentTitle(title: string): boolean {
+  const t = title.trim();
+  if (!t) return false;
+  return /\b(exam|exams|examination)\b/i.test(t);
+}
+
+function markTierForDot(
+  pct: number | null,
+): "empty" | "red" | "yellow" | "green" {
+  if (pct == null || Number.isNaN(pct) || !Number.isFinite(pct)) return "empty";
+  const p = Math.min(100, Math.max(0, pct));
+  if (p < 50) return "red";
+  if (p < 75) return "yellow";
+  return "green";
+}
+
+const DOT_COLORS = {
+  emptyStroke: "rgba(15, 23, 42, 0.22)",
+  red: "#e11d48",
+  yellow: "#ca8a04",
+  green: "var(--gm-accent, #1d9e75)",
+} as const;
+
+function AssessmentStatusDot({
+  pct,
+  seriesSlot,
+  shape,
+}: {
+  pct: number | null;
+  seriesSlot: AssessmentSeriesSlot;
+  shape: "circle" | "square";
+}) {
+  const tier = markTierForDot(pct);
+  const vb = 10;
+  const c = vb / 2;
+  const r = 3.85;
+  const inset = c - r;
+  const side = r * 2;
+  const sqRx = 1;
+
+  const fill =
+    tier === "empty"
+      ? "none"
+      : tier === "red"
+        ? DOT_COLORS.red
+        : tier === "yellow"
+          ? DOT_COLORS.yellow
+          : "#1d9e75";
+  const stroke =
+    tier === "empty" ? DOT_COLORS.emptyStroke : "rgba(15, 23, 42, 0.06)";
+  const sw = tier === "empty" ? 1.35 : 0.85;
+
+  const svg = (
+    <svg
+      width={11}
+      height={11}
+      viewBox={`0 0 ${vb} ${vb}`}
+      className="gm-dash-assess-dot-svg"
+      aria-hidden
+    >
+      {shape === "circle" ? (
+        <circle cx={c} cy={c} r={r} fill={fill} stroke={stroke} strokeWidth={sw} />
+      ) : (
+        <rect
+          x={inset}
+          y={inset}
+          width={side}
+          height={side}
+          rx={sqRx}
+          ry={sqRx}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={sw}
+        />
+      )}
+    </svg>
+  );
+
+  if (seriesSlot === "left") {
+    return <span className="gm-dash-assess-clip gm-dash-assess-clip--left">{svg}</span>;
+  }
+  if (seriesSlot === "right") {
+    return <span className="gm-dash-assess-clip gm-dash-assess-clip--right">{svg}</span>;
+  }
+  return svg;
+}
+
+function CollapsedAssessmentDots({
+  items,
+}: {
+  items: Array<{
+    id: string;
+    pct: number | null;
+    series_slot: AssessmentSeriesSlot;
+    shape: "circle" | "square";
+  }>;
+}) {
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  while (i < items.length) {
+    const cur = items[i]!;
+    const next = items[i + 1];
+    if (cur.series_slot === "left" && next?.series_slot === "right") {
+      nodes.push(
+        <span
+          key={`${cur.id}-${next.id}`}
+          role="listitem"
+          className="gm-dash-assess-dots-item"
+        >
+          <span className="gm-dash-assess-dot-pair">
+            <AssessmentStatusDot
+              pct={cur.pct}
+              seriesSlot="left"
+              shape={cur.shape}
+            />
+            <AssessmentStatusDot
+              pct={next.pct}
+              seriesSlot="right"
+              shape={next.shape}
+            />
+          </span>
+        </span>,
+      );
+      i += 2;
+      continue;
+    }
+    nodes.push(
+      <span key={cur.id} role="listitem" className="gm-dash-assess-dots-item">
+        <AssessmentStatusDot
+          pct={cur.pct}
+          seriesSlot={cur.series_slot ?? "full"}
+          shape={cur.shape}
+        />
+      </span>,
+    );
+    i += 1;
+  }
+
+  const n = items.length;
+  const done = items.filter((x) => x.pct != null).length;
+  const label = `${n} assessment${n === 1 ? "" : "s"}, ${done} with marks entered`;
+
+  return (
+    <span className="gm-dash-assess-dots" role="list" aria-label={label}>
+      {nodes}
+    </span>
+  );
+}
+
+function displayCourseTitle(code: string, name: string): string {
+  const raw = name?.trim() ?? "";
+  const cleaned = raw
+    .replace(
+      new RegExp(
+        `\\s*\\(${code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)\\s*$`,
+        "i",
+      ),
+      "",
+    )
+    .trim();
+  return cleaned ? `: ${cleaned}` : "";
+}
+
+function TargetGradeControl({
+  domId,
+  targetGrade,
+  onChangeGrade,
+}: {
+  domId: string;
+  targetGrade: number;
+  onChangeGrade: (g: number) => void;
+}) {
+  return (
+    <div
+      className="flex shrink-0 items-center gap-2 sm:self-center"
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <label
+        className="select-none text-[11px] font-medium text-[var(--color-text-tertiary)]"
+        htmlFor={domId}
+      >
+        Target
+      </label>
+      <select
+        id={domId}
+        value={targetGrade}
+        onChange={(e) => onChangeGrade(parseInt(e.target.value, 10))}
+        className="gm-dash-select"
+      >
+        {[7, 6, 5, 4, 3, 2, 1].map((g) => (
+          <option key={g} value={g}>
+            {g}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CourseProgressBar({
+  progressPct,
+  className,
+}: {
+  progressPct: number;
+  className?: string;
+}) {
+  const w = Math.min(100, Math.max(0, progressPct));
+  return (
+    <div className={`gm-dash-progress-wrap ${className ?? ""}`}>
+      <div className="gm-dash-progress-track">
+        <div className="gm-dash-progress-fill" style={{ width: `${w}%` }} />
+      </div>
+      <div className="gm-dash-progress-markers" aria-hidden>
+        {GRADE_BOUNDARY_PERCENTS.map((pct) => (
+          <span
+            key={pct}
+            className="gm-dash-progress-marker"
+            style={{ left: `${pct}%` }}
+            title={`${pct}%`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function CourseCard({
+  enrolment,
+}: {
+  enrolment: {
+    id: string;
+    course_code: string;
+    course_name: string;
+    credit_points: number;
+    target_grade: number | null;
+    profile_url: string | null;
+    university: string | null;
+    assessment_results: Assessment[];
+  };
+}) {
+  const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const [meta, setMeta] = useState({
+    code: enrolment.course_code,
+    name: enrolment.course_name,
+    cp: enrolment.credit_points,
+    profileUrl: enrolment.profile_url,
+    university: enrolment.university,
+  });
+
+  const [assessments, setAssessments] = useState<Assessment[]>(() =>
+    sortAssessmentsByDueDate(enrolment.assessment_results ?? []),
+  );
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [targetGrade, setTargetGrade] = useState<number>(
+    enrolment.target_grade ?? 7,
+  );
+  const [markHelpOpen, setMarkHelpOpen] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(true);
+
+  const assessmentSyncKey = (enrolment.assessment_results ?? [])
+    .map(
+      (a) =>
+        `${a.id}-${a.assessment_name}-${a.weighting}-${a.due_date ?? ""}-${a.mark ?? ""}`,
+    )
+    .join("|");
+
+  useEffect(() => {
+    setMeta({
+      code: enrolment.course_code,
+      name: enrolment.course_name,
+      cp: enrolment.credit_points,
+      profileUrl: enrolment.profile_url,
+      university: enrolment.university,
+    });
+  }, [
+    enrolment.id,
+    enrolment.course_code,
+    enrolment.course_name,
+    enrolment.credit_points,
+    enrolment.profile_url,
+    enrolment.university,
+  ]);
+
+  useEffect(() => {
+    setAssessments(
+      sortAssessmentsByDueDate(enrolment.assessment_results ?? []),
+    );
+  }, [enrolment.id, assessmentSyncKey]); // eslint-disable-line react-hooks/exhaustive-deps -- fingerprint sync
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handle(e: MouseEvent) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [menuOpen]);
+
+  function openEditModal() {
+    setEditOpen(true);
+  }
+
+  async function confirmDeleteCourse() {
+    setDeleteError(null);
+    setDeleteBusy(true);
+    try {
+      const res = await fetch(
+        `/api/dashboard/enrolments/${encodeURIComponent(enrolment.id)}`,
+        { method: "DELETE", credentials: "same-origin" },
+      );
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(
+          typeof json.error === "string" && json.error
+            ? json.error
+            : `Could not remove course (${res.status})`,
+        );
+      }
+      setDeleteOpen(false);
+      router.refresh();
+    } catch (e: unknown) {
+      setDeleteError(postgrestErrorMessage(e));
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  function formatMark(a: Assessment): string {
+    return a.mark == null ? "" : String(a.mark);
+  }
+
+  const computed = React.useMemo(() => {
+    const marks = assessments.map((a) => {
+      const raw =
+        draft[a.id] !== undefined ? draft[a.id]! : formatMark(a);
+      const t = raw.trim();
+      if (t === "") return null;
+      if (!isValidMarkInput(raw)) return null;
+      return t;
+    });
+    const weightedItems = assessments.map((a, i) => ({
+      weight: a.weighting,
+      mark: marks[i] ?? null,
+    }));
+
+    const goalTarget =
+      GRADE_THRESHOLDS[(targetGrade as 1 | 2 | 3 | 4 | 5 | 6 | 7) ?? 7];
+    const total = calculateWeightedTotal(weightedItems);
+
+    const fillerMarks = calculateEqualDistributionMarks(
+      weightedItems,
+      goalTarget,
+    );
+
+    const lastIndex = assessments.length > 0 ? assessments.length - 1 : -1;
+
+    const neededOnFinal =
+      lastIndex >= 0
+        ? calculateRequiredMarkForTarget(
+            weightedItems,
+            goalTarget,
+            lastIndex,
+          )
+        : null;
+
+    const hasEnteredMarks = marks.some((m) => {
+      const p = parseMarkToPercentage(m);
+      return p != null && !Number.isNaN(p);
+    });
+
+    let maxPossibleTotal = 0;
+    assessments.forEach((a, i) => {
+      const w = a.weighting;
+      const p = parseMarkToPercentage(marks[i]);
+      if (p != null && !Number.isNaN(p)) {
+        maxPossibleTotal += (p * w) / 100;
+      } else {
+        maxPossibleTotal += w;
+      }
+    });
+
+    const isGoalAchievable =
+      !hasEnteredMarks || maxPossibleTotal >= goalTarget;
+    const highestAchievableGrade = percentToGradeBand(maxPossibleTotal);
+    const requiresPerfectScore =
+      hasEnteredMarks && neededOnFinal != null && neededOnFinal >= 100;
+
+    return {
+      marks,
+      weightedItems,
+      goalTarget,
+      total,
+      fillerMarks,
+      neededOnFinal,
+      isGoalAchievable,
+      highestAchievableGrade,
+      requiresPerfectScore,
+      hasEnteredMarks,
+    };
+  }, [assessments, targetGrade, draft]);
+
+  const collapsedAssessmentDotItems = React.useMemo(() => {
+    return assessments.map((a) => {
+      const raw =
+        draft[a.id] !== undefined
+          ? draft[a.id]!
+          : a.mark == null
+            ? ""
+            : String(a.mark);
+      const t = raw.trim();
+      let pct: number | null = null;
+      if (t !== "" && isValidMarkInput(raw)) {
+        const p = parseMarkToPercentage(t.trim());
+        pct =
+          p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
+      } else if (a.mark != null && String(a.mark).trim() !== "") {
+        const p = parseMarkToPercentage(a.mark);
+        pct =
+          p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
+      }
+      const series_slot = a.series_slot ?? "full";
+      const shape: "circle" | "square" = isExamAssessmentTitle(
+        a.assessment_name,
+      )
+        ? "square"
+        : "circle";
+      return { id: a.id, pct, series_slot, shape };
+    });
+  }, [assessments, draft]);
+
+  async function saveAssessmentMark(assessmentId: string, value: string) {
+    const trimmed = value.trim();
+    const mark = trimmed === "" ? null : trimmed;
+    const previous = assessments.find((a) => a.id === assessmentId);
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.id === assessmentId
+          ? { ...a, mark }
+          : a,
+      ),
+    );
+    emitMarkChange({ enrolmentId: enrolment.id, assessmentId, mark });
+
+    const res = await fetch(
+      `/api/dashboard/assessments/${encodeURIComponent(assessmentId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          mark,
+        }),
+      },
+    );
+    if (!res.ok) {
+      if (previous) {
+        setAssessments((prev) =>
+          prev.map((a) => (a.id === assessmentId ? previous : a)),
+        );
+        emitMarkChange({
+          enrolmentId: enrolment.id,
+          assessmentId,
+          mark: previous.mark == null ? null : String(previous.mark),
+        });
+      }
+      void router.refresh();
+    }
+  }
+
+  async function updateTargetGrade(next: number) {
+    const prevGrade = targetGrade;
+    setTargetGrade(next);
+    const res = await fetch(
+      `/api/dashboard/enrolments/${encodeURIComponent(enrolment.id)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ target_grade: next }),
+      },
+    );
+    if (!res.ok) {
+      setTargetGrade(prevGrade);
+      void router.refresh();
+    }
+  }
+
+  const progressPct =
+    computed.total != null && !Number.isNaN(computed.total)
+      ? Math.min(100, computed.total)
+      : 0;
+
+  const collapsedStatus = (() => {
+    if (!computed.hasEnteredMarks) {
+      return null;
+    }
+    if (computed.isGoalAchievable) {
+      if (
+        computed.neededOnFinal != null &&
+        !computed.requiresPerfectScore
+      ) {
+        return (
+          <span className="text-[var(--color-text-tertiary)]">
+            Need{" "}
+            <span className="font-semibold text-[var(--gm-accent)]">
+              {computed.neededOnFinal.toFixed(1)}%
+            </span>{" "}
+            on final
+          </span>
+        );
+      }
+      return (
+        <span className="text-[var(--color-text-tertiary)]">
+          On track for grade {targetGrade}
+        </span>
+      );
+    }
+    return (
+      <span className="text-red-600">
+        <span className="font-semibold">Goal {targetGrade} not achievable</span>
+        {computed.highestAchievableGrade != null &&
+          computed.highestAchievableGrade < targetGrade && (
+            <span className="font-normal text-[var(--color-text-tertiary)]">
+              {" "}
+              · max grade {computed.highestAchievableGrade}
+            </span>
+          )}
+      </span>
+    );
+  })();
+
+  const safeProfileHref = safeHttpUrl(meta.profileUrl);
+
+  return (
+    <article className="gm-dash-card group">
+      <div
+        className={`flex min-w-0 items-start justify-between gap-3 ${expanded ? "border-b border-[var(--color-border-tertiary)] pb-4" : ""}`}
+      >
+        <button
+          type="button"
+          className="group flex min-w-0 flex-1 items-start gap-1.5 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-[rgba(29,158,117,0.35)]"
+          aria-expanded={expanded}
+          aria-controls={`course-body-${enrolment.id}`}
+          onClick={() => setExpanded((e) => !e)}
+        >
+          <ChevronDown
+            className={`mt-[3px] h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)] opacity-40 transition-[transform,opacity] duration-200 group-hover:opacity-70 ${expanded ? "" : "-rotate-90"}`}
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <div className="gm-dash-course-title min-w-0">
+              <span className="break-words">
+                {meta.code}
+                {displayCourseTitle(meta.code, meta.name)}
+              </span>
+              {safeProfileHref ? (
+                <a
+                  href={`${safeProfileHref}#assessment`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="View course profile"
+                  aria-label="View course profile"
+                  className="ml-1 inline-flex shrink-0 align-middle rounded-lg p-1.5 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-background-secondary)] hover:text-[var(--color-text-secondary)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+              ) : null}
+            </div>
+            <p className="gm-dash-course-meta gm-dash-course-meta--with-dots">
+              <span className="gm-dash-course-meta-inline">
+                <strong className="gm-dash-course-meta-pct">
+                  {computed.total != null && !Number.isNaN(computed.total)
+                    ? `${computed.total.toFixed(1)}%`
+                    : "—"}
+                </strong>
+                {!expanded ? (
+                  <CollapsedAssessmentDots
+                    items={collapsedAssessmentDotItems}
+                  />
+                ) : null}
+              </span>
+            </p>
+          </div>
+        </button>
+
+        <div
+          className="flex shrink-0 items-center gap-2"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              className="gm-dash-icon-btn"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-label="Course options"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((o) => !o);
+              }}
+            >
+              <MoreVertical className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            {menuOpen ? (
+              <div
+                className="gm-dash-menu absolute right-0 top-full z-40 mt-1"
+                role="menu"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="gm-dash-menu-item"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openEditModal();
+                  }}
+                >
+                  Course settings
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="gm-dash-menu-item gm-dash-menu-item--danger"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDeleteError(null);
+                    setDeleteOpen(true);
+                  }}
+                >
+                  Remove course
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {!expanded ? (
+        <div className="mt-4 pl-7">
+          <CourseProgressBar progressPct={progressPct} />
+          {collapsedStatus ? (
+            <p className="mt-2 line-clamp-2 text-xs leading-snug text-[var(--color-text-secondary)]">
+              {collapsedStatus}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div id={`course-body-${enrolment.id}`} hidden={!expanded}>
+        <div className="pt-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <CourseProgressBar progressPct={progressPct} />
+            </div>
+            <TargetGradeControl
+              domId={`target-grade-${enrolment.id}`}
+              targetGrade={targetGrade}
+              onChangeGrade={(g) => void updateTargetGrade(g)}
+            />
+          </div>
+          {computed.hasEnteredMarks ? (
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              {computed.isGoalAchievable ? (
+                computed.neededOnFinal != null &&
+                !computed.requiresPerfectScore ? (
+                  <>
+                    Need{" "}
+                    <span className="font-semibold text-[var(--gm-accent)]">
+                      {computed.neededOnFinal.toFixed(1)}%
+                    </span>{" "}
+                    on your last weighted assessment
+                  </>
+                ) : (
+                  <>On track for grade {targetGrade}</>
+                )
+              ) : (
+                <span className="text-red-600">
+                  <span className="font-semibold">
+                    Grade {targetGrade} is not reachable
+                  </span>
+                  {computed.highestAchievableGrade != null &&
+                    computed.highestAchievableGrade < targetGrade && (
+                      <span className="text-[var(--color-text-tertiary)]">
+                        {" "}
+                        (best possible: {computed.highestAchievableGrade})
+                      </span>
+                    )}
+                </span>
+              )}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="gm-dash-table-wrap">
+          <table className="gm-dash-table">
+            <thead>
+              <tr>
+                <th scope="col">Assessment</th>
+                <th scope="col" className="gm-dash-th-num">
+                  Weight
+                </th>
+                <th scope="col" className="gm-dash-th-num">
+                  Due
+                </th>
+                <th scope="col" className="gm-dash-th-num">
+                  <span className="inline-flex items-center justify-end gap-1">
+                    Mark
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMarkHelpOpen(true);
+                      }}
+                      className="gm-dash-icon-btn !h-7 !w-7"
+                      aria-label="How to enter marks"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </button>
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+            {assessments.map((a, i) => {
+              const stored = formatMark(a);
+              const value = draft[a.id] !== undefined ? draft[a.id]! : stored;
+              const invalid = value.trim() !== "" && !isValidMarkInput(value);
+              const fill = computed.fillerMarks[i];
+              const fillerPlaceholder =
+                !stored && value.trim() === "" && fill != null;
+
+              const slashOnly = value.trim().match(/^\/(\d+)$/);
+              const slashDenom = slashOnly
+                ? parseInt(slashOnly[1]!, 10)
+                : null;
+
+              const livePct =
+                value.trim() !== "" && isValidMarkInput(value)
+                  ? parseMarkToPercentage(value.trim())
+                  : null;
+
+              const markHint = (() => {
+                if (slashDenom != null) {
+                  const requiredPct = computed.fillerMarks[i];
+                  if (requiredPct == null) {
+                    return (
+                      <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
+                        —
+                      </span>
+                    );
+                  }
+                  const nn = Math.min(
+                    slashDenom,
+                    Math.ceil((requiredPct * slashDenom) / 100),
+                  );
+                  const actualPct = (nn / slashDenom) * 100;
+                  const pctStr =
+                    actualPct >= 100
+                      ? "100"
+                      : actualPct <= 0
+                        ? "0"
+                        : actualPct.toFixed(1);
+                  return (
+                    <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
+                      {nn}/{slashDenom} ({pctStr}%)
+                    </span>
+                  );
+                }
+                if (livePct != null && !Number.isNaN(livePct)) {
+                  return (
+                    <span className="gm-dash-mark-pct">{livePct.toFixed(0)}%</span>
+                  );
+                }
+                if (!stored && fill != null) {
+                  const { percentage } = formatMarkDisplay(fill);
+                  if (percentage == null) return null;
+                  return (
+                    <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
+                      ~{percentage.toFixed(0)}%
+                    </span>
+                  );
+                }
+                return null;
+              })();
+
+              return (
+                <tr key={a.id}>
+                  <td>
+                    <div className="gm-dash-assess-name">{a.assessment_name}</div>
+                  </td>
+                  <td className="gm-dash-td-num gm-dash-td-muted">
+                    {a.weighting}%
+                  </td>
+                  <td className="gm-dash-td-num gm-dash-td-muted">
+                    {formatDueDateForDisplay(a.due_date)}
+                  </td>
+                  <td className="gm-dash-td-num">
+                    <div className="gm-dash-mark-cell">
+                      <input
+                        type="text"
+                        placeholder={
+                          fillerPlaceholder && fill != null
+                            ? String(Math.round(fill))
+                            : "8/10 or 50"
+                        }
+                        value={value}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setDraft((p) => ({
+                            ...p,
+                            [a.id]: next,
+                          }));
+                          const t = next.trim();
+                          if (
+                            t !== "" &&
+                            !isValidMarkInput(next)
+                          ) {
+                            return;
+                          }
+                          emitMarkChange({
+                            enrolmentId: enrolment.id,
+                            assessmentId: a.id,
+                            mark: t === "" ? null : t,
+                          });
+                        }}
+                        onBlur={async (e) => {
+                          const v = e.target.value;
+                          if (/^\/\d+$/.test(v.trim())) return;
+                          setDraft((p) => {
+                            const copy = { ...p };
+                            delete copy[a.id];
+                            return copy;
+                          });
+                          if (!isValidMarkInput(v)) return;
+                          await saveAssessmentMark(a.id, v);
+                        }}
+                        className={`gm-dash-mark-input ${fillerPlaceholder ? "gm-dash-mark-input--hint" : ""} ${invalid ? "gm-dash-mark-input--invalid" : ""}`}
+                      />
+                      {markHint}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      </div>
+
+      {markHelpOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="gm-dash-modal-backdrop"
+              onClick={() => setMarkHelpOpen(false)}
+              role="presentation"
+            >
+              <div
+                className="gm-dash-modal-panel gm-dash-modal-panel--wide"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`dashboard-mark-help-${enrolment.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <header className="gm-dash-modal-header">
+                  <h2
+                    id={`dashboard-mark-help-${enrolment.id}`}
+                    className="text-lg font-semibold tracking-tight text-[var(--color-text-primary)]"
+                  >
+                    How to enter marks
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setMarkHelpOpen(false)}
+                    className="gm-dash-modal-close"
+                    aria-label="Close"
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.75} />
+                  </button>
+                </header>
+                <div className="gm-dash-modal-body space-y-4 pb-6 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  <div>
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      1. Enter a percentage
+                    </p>
+                    <p className="mt-1">
+                      Type a number like <span className="font-mono">50</span>{" "}
+                      for <span className="font-mono">50%</span>.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      2. Enter marks out of a total
+                    </p>
+                    <p className="mt-1">
+                      Use a fraction like <span className="font-mono">8/10</span>{" "}
+                      or <span className="font-mono">24/30</span>.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      3. See required marks for your goal grade
+                    </p>
+                    <p className="mt-1">
+                      Type <span className="font-mono">/50</span> in a mark
+                      field to see how many marks out of 50 you need for your
+                      target grade.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      <CourseEditModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        enrolmentId={enrolment.id}
+        courseCode={meta.code}
+        courseName={meta.name}
+        creditPoints={meta.cp}
+        profileUrl={meta.profileUrl}
+        university={meta.university}
+        assessments={assessments}
+        onSaved={(next) =>
+          setMeta({
+            code: next.code,
+            name: next.name,
+            cp: next.cp,
+            profileUrl: next.profileUrl,
+            university: next.university,
+          })
+        }
+      />
+
+      {deleteOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="gm-dash-modal-backdrop"
+              onClick={() => !deleteBusy && setDeleteOpen(false)}
+              role="presentation"
+            >
+              <div
+                className="gm-dash-modal-panel gm-dash-modal-panel--sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`course-delete-${enrolment.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="gm-dash-modal-body">
+                  <h2
+                    id={`course-delete-${enrolment.id}`}
+                    className="text-lg font-semibold text-[var(--color-text-primary)]"
+                  >
+                    Remove this course?
+                  </h2>
+                  <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                    {meta.code} will be removed from this semester, including all
+                    assessment marks. This cannot be undone.
+                  </p>
+                  {deleteError ? (
+                    <p className="mt-3 text-sm text-red-600" role="alert">
+                      {deleteError}
+                    </p>
+                  ) : null}
+                </div>
+                <footer className="gm-dash-modal-footer">
+                  <button
+                    type="button"
+                    disabled={deleteBusy}
+                    onClick={() => setDeleteOpen(false)}
+                    className="gm-dash-modal-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteBusy}
+                    onClick={() => void confirmDeleteCourse()}
+                    className="gm-dash-modal-btn gm-dash-modal-btn--danger"
+                  >
+                    {deleteBusy ? "Removing…" : "Remove course"}
+                  </button>
+                </footer>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </article>
+  );
+}

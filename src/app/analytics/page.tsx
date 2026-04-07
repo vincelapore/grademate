@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { GmShell } from "@/components/gm/GmShell";
 
 type Counts = Record<string, number> & {
     coursesCached?: number;
@@ -302,44 +303,54 @@ function AnalyticsContent() {
 
     if (loading) {
         return (
-            <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50'>
-                <main className='mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-4 px-4'>
-                    <p className='text-slate-400'>Loading analytics…</p>
+            <GmShell variant='app' showFooter={false}>
+                <main className='gm-container'>
+                    <p style={{ color: "var(--color-text-secondary)" }}>
+                        Loading analytics…
+                    </p>
                 </main>
-            </div>
+            </GmShell>
         );
     }
 
     if (error) {
         return (
-            <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50'>
-                <main className='mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-4 px-4'>
-                    <p className='text-rose-400'>{error}</p>
-                    <button
-                        type='button'
-                        onClick={fetchCounts}
-                        className='rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700'
-                    >
-                        Retry
-                    </button>
+            <GmShell variant='app' showFooter={false}>
+                <main className='gm-container'>
+                    <div className='gm-card'>
+                        <p style={{ color: "#ef4444" }}>{error}</p>
+                        <button
+                            type='button'
+                            onClick={fetchCounts}
+                            className='gm-btn-ghost'
+                            style={{ marginTop: 12 }}
+                        >
+                            Retry
+                        </button>
+                    </div>
                 </main>
-            </div>
+            </GmShell>
         );
     }
 
     return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50'>
-            <main className='mx-auto flex min-h-screen max-w-4xl flex-col gap-10 px-4 pb-20 pt-12 sm:px-6 lg:px-8'>
-                <header className='flex flex-col gap-4 border-b border-slate-800/50 pb-6'>
-                    <div className='flex items-center gap-4'>
-                        <Link
-                            href='/'
-                            className='text-sm font-medium text-slate-400 underline-offset-2 hover:text-slate-200'
-                        >
-                            ← UQ Grades
+        <GmShell variant='app'>
+            <main className='gm-container'>
+                <header style={{ marginBottom: 18 }}>
+                    <p style={{ margin: 0 }}>
+                        <Link href='/' className='gm-nav-link'>
+                            ← Back
                         </Link>
-                    </div>
-                    <h1 className='text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl'>
+                    </p>
+                    <h1
+                        style={{
+                            marginTop: 10,
+                            marginBottom: 0,
+                            fontFamily: "var(--font-gm-serif)",
+                            fontWeight: 400,
+                            letterSpacing: "-0.5px",
+                        }}
+                    >
                         Analytics
                     </h1>
                 </header>
@@ -409,17 +420,19 @@ function AnalyticsContent() {
                     />
                 </div>
             </main>
-        </div>
+        </GmShell>
     );
 }
 
 function AnalyticsLoading() {
     return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50'>
-            <main className='mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-4 px-4'>
-                <p className='text-slate-400'>Loading analytics…</p>
+        <GmShell variant='app' showFooter={false}>
+            <main className='gm-container'>
+                <p style={{ color: "var(--color-text-secondary)" }}>
+                    Loading analytics…
+                </p>
             </main>
-        </div>
+        </GmShell>
     );
 }
 

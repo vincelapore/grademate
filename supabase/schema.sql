@@ -1,6 +1,20 @@
 -- UQGrades Supabase Schema
 -- Run this in the Supabase SQL Editor (Dashboard > SQL Editor)
 
+-- ============================================================
+-- Grademate dashboard schema additions
+-- ============================================================
+--
+-- Course profile link + institution (run in SQL Editor if not already applied):
+-- ALTER TABLE public.subject_enrolments
+--   ADD COLUMN IF NOT EXISTS profile_url text,
+--   ADD COLUMN IF NOT EXISTS university text;
+-- Pro gating uses a simple plan field on `public.users`.
+-- `free` is default; set to `pro` later via Stripe/webhooks.
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free'
+CHECK (plan IN ('free', 'pro'));
+
 -- User's saved courses/semesters
 CREATE TABLE saved_courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -11,6 +11,11 @@ export const GRADE_THRESHOLDS: Record<GradeBand, number> = {
   7: 85,
 };
 
+/** Percentages where the displayed grade steps up (bands 2–7); use for progress-bar tick marks. */
+export const GRADE_BOUNDARY_PERCENTS: readonly number[] = (
+  [2, 3, 4, 5, 6, 7] as const
+).map((g) => GRADE_THRESHOLDS[g]);
+
 export type WeightedMark = {
   weight: number | "pass/fail"; // percentage of course (e.g. 20 means 20%) or "pass/fail"
   mark?: string | number | null; // Can be fraction string like "9/10", percentage number, or null

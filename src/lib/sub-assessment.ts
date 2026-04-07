@@ -87,7 +87,7 @@ export function ensureSubAssessmentRows(
       mark: r.mark,
       weight: Math.round((r.weight! * total) / sum)
     }));
-    let s = scaled.reduce((a, r) => a + r.weight, 0);
+    const s = scaled.reduce((a, r) => a + r.weight, 0);
     if (s !== total && scaled.length > 0) {
       const last = scaled.length - 1;
       scaled[last] = {
@@ -105,7 +105,7 @@ export function ensureSubAssessmentRows(
       mark: r.mark,
       weight: Math.round((r.weight! * total) / sum)
     }));
-    let s = scaled.reduce((a, r) => a + r.weight, 0);
+    const s = scaled.reduce((a, r) => a + r.weight, 0);
     if (s !== total && scaled.length > 0) {
       const last = scaled.length - 1;
       scaled[last] = {

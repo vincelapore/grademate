@@ -79,7 +79,11 @@ async function main() {
         if (v == null) return null;
         if (typeof v === "string") return { type: "string", length: v.length };
         if (Array.isArray(v)) return { type: "array", length: v.length };
-        if (typeof v === "object") return { type: "object", keys: Object.keys(v as any).slice(0, 20) };
+        if (typeof v === "object")
+            return {
+                type: "object",
+                keys: Object.keys(v as Record<string, unknown>).slice(0, 20)
+            };
         return { type: typeof v };
     };
 

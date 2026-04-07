@@ -162,7 +162,7 @@ export async function fetchQUTCourseAssessment(
         const headingText = heading.text().trim();
 
         // Extract assessment name (remove "Assessment: " prefix if present)
-        let name = headingText.replace(/^Assessment:\s*/i, "").trim();
+        const name = headingText.replace(/^Assessment:\s*/i, "").trim();
         if (!name) return;
 
         console.log(

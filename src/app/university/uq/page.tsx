@@ -9,6 +9,7 @@ import {
     useState
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { GmShell } from "@/components/gm/GmShell";
 import {
     calculateRequiredMarkForTarget,
     calculateWeightedTotal,
@@ -36,11 +37,8 @@ import type { CourseAssessment } from "@/lib/uq-scraper";
 import {
     getCurrentSemester,
     getSelectableYears,
-    formatSemester,
-    formatSemesterDates,
     type SemesterSelection,
-    type SemesterType,
-    type DeliveryMode
+    type SemesterType
 } from "@/lib/semester";
 import type { DeliveryModeOption } from "@/lib/delivery-modes";
 import {
@@ -505,10 +503,10 @@ function HomeContent() {
     }, [state.courses]);
 
     return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-50'>
-            <main className='mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-4 pb-20 pt-12 sm:px-6 lg:px-8'>
+        <div className='gm-univ-page min-h-screen'>
+            <main className='gm-container flex flex-col gap-10 pb-16 pt-4' style={{ maxWidth: 1120 }}>
                 {showSemesterChangedBanner && (
-                    <div className='rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 flex flex-wrap items-center justify-between gap-2'>
+                    <div className='gm-univ-warn-banner px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2'>
                         <span>
                             Semester has changed. Reset to use the new default?
                         </span>
@@ -518,7 +516,7 @@ function HomeContent() {
                                 onClick={() => {
                                     setShowSemesterChangedBanner(false);
                                 }}
-                                className='rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700'
+                                className='gm-univ-btn-ghost px-3 py-1.5 text-xs'
                             >
                                 Dismiss
                             </button>
@@ -528,19 +526,19 @@ function HomeContent() {
                                     setShowSemesterChangedBanner(false);
                                     handleReset();
                                 }}
-                                className='rounded border border-amber-500/50 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/30'
+                                className='rounded border border-[rgba(186,117,23,0.45)] bg-[rgba(239,159,39,0.15)] px-3 py-1.5 text-xs font-medium text-[#7a4a0f] hover:bg-[rgba(239,159,39,0.22)]'
                             >
                                 Reset
                             </button>
                         </div>
                     </div>
                 )}
-                <header className='flex flex-col gap-5 border-b border-slate-800/50 pb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
+                <header className='flex flex-col gap-5 border-b gm-univ-border pb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
                     <div className='relative min-w-0'>
-                        <h1 className='text-2xl font-bold tracking-tight text-slate-50 sm:text-4xl'>
+                        <h1 className='text-2xl font-bold tracking-tight gm-univ-fg sm:text-4xl'>
                             UQ Grades
                         </h1>
-                        <p className='mt-1 text-sm text-slate-400 max-w-md'>
+                        <p className='mt-1 text-sm gm-univ-muted max-w-md'>
                             Track your sem progress, calculate grades, and see
                             what you need to hit that 7 (or 4).{" "}
                             <button
@@ -549,28 +547,28 @@ function HomeContent() {
                                 setHowToOpen(true);
                                 trackAnalytics("how_to_opened");
                             }}
-                                className='text-slate-400 underline underline-offset-2 transition-colors hover:text-slate-200'
+                                className='gm-univ-muted underline underline-offset-2 transition-colors gm-univ-hover-fg'
                             >
                                 How to use
                             </button>
                         </p>
                         {howToOpen && (
                             <div
-                                className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4'
+                                className='fixed inset-0 z-50 flex items-center justify-center gm-univ-modal-overlay backdrop-blur-sm p-4'
                                 onClick={() => setHowToOpen(false)}
                                 role='dialog'
                                 aria-labelledby='how-to-title'
                                 aria-modal='true'
                             >
                                 <div
-                                    className='relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-slate-900/95 p-6 shadow-2xl backdrop-blur-xl'
+                                    className='relative gm-univ-modal w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-xl p-6'
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <button
                                         type='button'
                                         onClick={() => setHowToOpen(false)}
                                         aria-label='Close'
-                                        className='absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-200'
+                                        className='absolute right-4 top-4 rounded-lg p-1.5 gm-univ-muted transition-all gm-univ-hover-surface gm-univ-hover-fg'
                                     >
                                         <svg
                                             className='h-5 w-5'
@@ -591,18 +589,18 @@ function HomeContent() {
                                         <div>
                                             <h2
                                                 id='how-to-title'
-                                                className='text-xl font-bold tracking-tight text-slate-50'
+                                                className='text-xl font-bold tracking-tight gm-univ-fg'
                                             >
                                                 How to use
                                             </h2>
                                         </div>
 
-                                        <div className='space-y-3 text-sm text-slate-200'>
+                                        <div className='space-y-3 text-sm gm-univ-body'>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     1. Add a course
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Choose semester and year,
                                                     enter the course code (e.g.{" "}
                                                     <span className='font-mono'>
@@ -614,10 +612,10 @@ function HomeContent() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     2. Enter marks
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Type your result for each
                                                     assessment (e.g.{" "}
                                                     <span className='font-mono'>
@@ -636,10 +634,10 @@ function HomeContent() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     3. See what you need
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Use the &quot;Need X%&quot;
                                                     column to see the mark
                                                     required on remaining items
@@ -648,10 +646,10 @@ function HomeContent() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     4. Save or share
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Your progress is saved
                                                     automatically in this
                                                     browser. Use Copy link to
@@ -660,10 +658,10 @@ function HomeContent() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     5. Calendar
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Open Calendar on a course to
                                                     choose which due-date events
                                                     to include, then Export to
@@ -672,10 +670,10 @@ function HomeContent() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className='font-semibold text-slate-100'>
+                                                <p className='font-semibold gm-univ-fg'>
                                                     6. Start over
                                                 </p>
-                                                <p className='mt-1 text-slate-300'>
+                                                <p className='mt-1 gm-univ-muted-strong'>
                                                     Use Reset to clear all
                                                     courses and marks.
                                                 </p>
@@ -690,14 +688,14 @@ function HomeContent() {
                         {state.courses.length > 0 && (
                             <button
                                 onClick={() => setShowResetConfirm(true)}
-                                className='min-h-[44px] rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-rose-500/50 hover:bg-rose-500/10 hover:text-rose-300 active:bg-slate-800/50 sm:min-h-0 sm:py-2'
+                                className='gm-univ-btn-ghost min-h-[44px] px-4 py-2.5 sm:min-h-0 sm:py-2 gm-univ-danger'
                             >
                                 Reset
                             </button>
                         )}
                         <button
                             onClick={copyLink}
-                            className='group min-h-[44px] rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300 active:bg-slate-800/50 sm:min-h-0 sm:py-2'
+                            className='gm-univ-btn-ghost min-h-[44px] px-4 py-2.5 sm:min-h-0 sm:py-2'
                         >
                             {linkCopied ? "Copied!" : "Copy link"}
                         </button>
@@ -705,7 +703,7 @@ function HomeContent() {
                             href='https://buymeacoffee.com/vincelapore'
                             target='_blank'
                             rel='noopener noreferrer'
-                            className='inline-flex min-h-[44px] items-center rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5 text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300 active:bg-slate-800/50 sm:min-h-0 sm:py-2'
+                            className='gm-univ-btn-ghost inline-flex min-h-[44px] items-center px-4 py-2.5 sm:min-h-0 sm:py-2'
                         >
                             Buy Me a Coffee ☕
                         </a>
@@ -714,36 +712,36 @@ function HomeContent() {
 
                 {showResetConfirm && (
                     <div
-                        className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm'
+                        className='fixed inset-0 z-50 flex items-center justify-center gm-univ-modal-overlay backdrop-blur-sm'
                         onClick={() => setShowResetConfirm(false)}
                         role='dialog'
                         aria-modal='true'
                         aria-labelledby='reset-dialog-title'
                     >
                         <div
-                            className='mx-4 w-full max-w-sm rounded-xl border border-slate-700/50 bg-slate-900 p-6 shadow-xl'
+                            className='mx-4 w-full max-w-sm rounded-xl border gm-univ-border-strong gm-univ-surface-white p-6 shadow-xl'
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2
                                 id='reset-dialog-title'
-                                className='text-lg font-semibold text-slate-50'
+                                className='text-lg font-semibold gm-univ-fg'
                             >
                                 Reset everything?
                             </h2>
-                            <p className='mt-2 text-sm text-slate-400'>
+                            <p className='mt-2 text-sm gm-univ-muted'>
                                 This will remove all courses and marks. You
                                 can&apos;t undo this.
                             </p>
                             <div className='mt-6 flex gap-3'>
                                 <button
                                     onClick={() => setShowResetConfirm(false)}
-                                    className='flex-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700'
+                                    className='gm-univ-btn-ghost flex-1 px-4 py-2 text-sm'
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleReset}
-                                    className='flex-1 rounded-lg border border-rose-500/50 bg-rose-500/20 px-4 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/30'
+                                    className='flex-1 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100'
                                 >
                                     Reset
                                 </button>
@@ -752,13 +750,13 @@ function HomeContent() {
                     </div>
                 )}
 
-                <section className='grid gap-6 rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/50 via-slate-950/50 to-slate-900/30 p-6 backdrop-blur-sm shadow-xl shadow-black/20 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:p-8'>
+                <section className='gm-univ-panel grid gap-6 p-6 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:p-8'>
                     <div className='min-w-0 space-y-4'>
                         {!pendingCourse ? (
                             <>
                                 <div className='grid grid-cols-2 gap-2'>
                                     {state.courses.length > 0 ? (
-                                        <div className='col-span-2 flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-2 text-xs font-medium text-slate-300'>
+                                        <div className='col-span-2 flex items-center gap-2 gm-univ-panel-inset px-3 py-2 text-xs font-medium gm-univ-muted-strong'>
                                             <span>
                                                 {effectiveSemester.semester}{" "}
                                                 {effectiveSemester.year}
@@ -777,7 +775,7 @@ function HomeContent() {
                                                         )
                                                     }))
                                                 }
-                                                className='rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-2 text-xs font-medium outline-none backdrop-blur-sm transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20'
+                                                className='gm-univ-input px-3 py-2 text-xs font-medium'
                                             >
                                                 {getSelectableYears().map(
                                                     (y) => (
@@ -799,7 +797,7 @@ function HomeContent() {
                                                             .value as SemesterType
                                                     }))
                                                 }
-                                                className='rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-2 text-xs font-medium outline-none backdrop-blur-sm transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20'
+                                                className='gm-univ-input px-3 py-2 text-xs font-medium'
                                             >
                                                 <option value='Semester 1'>
                                                     Sem 1
@@ -831,14 +829,14 @@ function HomeContent() {
                                             }
                                         }}
                                         placeholder='Course code (e.g. CSSE3100)'
-                                        className='min-w-0 flex-1 basis-0 rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2.5 text-sm font-medium outline-none backdrop-blur-sm placeholder:text-slate-500 transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20 sm:basis-auto'
+                                        className='gm-univ-input min-w-0 flex-1 basis-0 px-4 py-2.5 text-sm font-medium placeholder:text-[rgba(15,23,42,0.45)] sm:basis-auto'
                                     />
                                     <button
                                         disabled={loadingDeliveryModes}
                                         onClick={() =>
                                             void findDeliveryModes(courseInput)
                                         }
-                                        className='inline-flex w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-400 hover:to-cyan-400 hover:shadow-xl hover:shadow-sky-500/30 disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:shadow-none sm:w-auto sm:min-w-[90px]'
+                                        className='gm-univ-btn-primary inline-flex w-full min-w-0 shrink-0 items-center justify-center gap-2 px-5 py-2.5 sm:w-auto sm:min-w-[90px]'
                                     >
                                         {loadingDeliveryModes ? (
                                             <>
@@ -856,13 +854,13 @@ function HomeContent() {
                             </>
                         ) : (
                             <div className='space-y-3'>
-                                <div className='rounded-lg border border-slate-800/50 bg-slate-900/30 p-3'>
-                                    <p className='text-xs font-medium text-slate-400 mb-1'>
+                                <div className='rounded-lg border gm-univ-border gm-univ-surface p-3'>
+                                    <p className='text-xs font-medium gm-univ-muted mb-1'>
                                         {pendingCourse.courseCode} -{" "}
                                         {pendingCourse.semester}{" "}
                                         {pendingCourse.year}
                                     </p>
-                                    <p className='text-sm font-semibold text-slate-300'>
+                                    <p className='text-sm font-semibold gm-univ-muted-strong'>
                                         Select delivery mode:
                                     </p>
                                 </div>
@@ -880,13 +878,13 @@ function HomeContent() {
                                                     onClick={() =>
                                                         void addCourse(mode)
                                                     }
-                                                    className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-3 text-left text-sm font-medium text-slate-300 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-50'
+                                                    className='gm-univ-btn-ghost w-full justify-start px-4 py-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50'
                                                 >
                                                     <div className='flex items-center justify-between gap-2'>
                                                         <span className='flex min-w-0 items-center gap-2'>
                                                             {isLoading && (
                                                                 <span
-                                                                    className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-slate-500 border-t-sky-400'
+                                                                    className='h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[rgba(15,23,42,0.15)] border-t-[var(--gm-accent)]'
                                                                     aria-hidden
                                                                 />
                                                             )}
@@ -895,7 +893,7 @@ function HomeContent() {
                                                             </span>
                                                         </span>
                                                         {mode.location && (
-                                                            <span className='shrink-0 text-xs text-slate-500'>
+                                                            <span className='shrink-0 text-xs gm-univ-muted'>
                                                                 {mode.location}
                                                             </span>
                                                         )}
@@ -907,35 +905,35 @@ function HomeContent() {
                                 </div>
                                 <button
                                     onClick={() => setPendingCourse(null)}
-                                    className='w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2 text-xs font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-slate-600 hover:bg-slate-900/50'
+                                    className='gm-univ-btn-ghost w-full px-4 py-2 text-xs'
                                 >
                                     Cancel
                                 </button>
                             </div>
                         )}
                         {error && (
-                            <p className='text-xs font-medium text-rose-400'>
+                            <p className='text-xs font-medium text-red-600'>
                                 {error}
                             </p>
                         )}
                     </div>
 
-                    <div className='min-w-0 overflow-hidden rounded-xl border border-slate-800/50 bg-gradient-to-br from-slate-900/30 to-slate-950/50 p-6 backdrop-blur-sm'>
+                    <div className='gm-univ-panel-inset min-w-0 overflow-hidden p-6'>
                         {dashboardSummary ? (
                             <div className='space-y-4'>
                                 {dashboardSummary.current && (
                                     <div className='min-w-0'>
-                                        <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-2'>
+                                        <p className='text-xs font-medium uppercase tracking-wider gm-univ-muted mb-2'>
                                             Current Grade
                                         </p>
-                                        <p className='text-2xl font-bold tracking-tight text-slate-50'>
-                                            <span className='inline-block bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent'>
+                                        <p className='text-2xl font-bold tracking-tight gm-univ-fg'>
+                                            <span className='inline-block gm-univ-accent-text'>
                                                 {dashboardSummary.current.avg.toFixed(
                                                     1
                                                 )}
                                                 %
                                             </span>
-                                            <span className='text-slate-400 ml-3 font-semibold'>
+                                            <span className='gm-univ-muted ml-3 font-semibold'>
                                                 Grade{" "}
                                                 {dashboardSummary.current.band}
                                             </span>
@@ -943,17 +941,17 @@ function HomeContent() {
                                     </div>
                                 )}
                                 <div className='min-w-0'>
-                                    <p className='text-xs font-medium uppercase tracking-wider text-slate-500 mb-2'>
+                                    <p className='text-xs font-medium uppercase tracking-wider gm-univ-muted mb-2'>
                                         Overall
                                     </p>
-                                    <p className='text-2xl font-bold tracking-tight text-slate-50'>
-                                        <span className='inline-block bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent'>
+                                    <p className='text-2xl font-bold tracking-tight gm-univ-fg'>
+                                        <span className='inline-block gm-univ-accent-text'>
                                             {dashboardSummary.overall.avg.toFixed(
                                                 1
                                             )}
                                             %
                                         </span>
-                                        <span className='text-slate-400 ml-3 font-semibold'>
+                                        <span className='gm-univ-muted ml-3 font-semibold'>
                                             Grade{" "}
                                             {dashboardSummary.overall.band}
                                         </span>
@@ -961,7 +959,7 @@ function HomeContent() {
                                 </div>
                             </div>
                         ) : (
-                            <div className='flex h-full items-center text-sm text-slate-500'>
+                            <div className='flex h-full items-center text-sm gm-univ-muted'>
                                 Add a course to get started
                             </div>
                         )}
@@ -1067,13 +1065,13 @@ function HomeContent() {
                         return (
                             <article
                                 key={c.course.courseCode + idx}
-                                className='group rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/50 via-slate-950/50 to-slate-900/30 p-6 backdrop-blur-sm shadow-xl shadow-black/20 transition-all hover:border-slate-700/50 hover:shadow-2xl hover:shadow-black/30 sm:p-8'
+                                className='group gm-univ-course-card transition-shadow hover:shadow-md sm:p-8'
                             >
                                 <div className='mb-6 flex min-w-0 flex-wrap items-start justify-between gap-3'>
                                     <div className='min-w-0 flex-1'>
                                         <div className='flex flex-wrap items-center gap-2 gap-y-2'>
                                             <div>
-                                                <h2 className='text-xl font-bold tracking-tight text-slate-50'>
+                                                <h2 className='text-xl font-bold tracking-tight gm-univ-fg'>
                                                     {c.course.courseCode}
                                                     {(() => {
                                                         const raw =
@@ -1099,7 +1097,7 @@ function HomeContent() {
                                                     href={`${c.course.courseProfileUrl}#assessment`}
                                                     target='_blank'
                                                     rel='noopener noreferrer'
-                                                    className='inline-flex items-center rounded-lg border border-slate-700/50 bg-slate-950/50 p-1.5 text-slate-400 backdrop-blur-sm transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300'
+                                                    className='gm-univ-btn-ghost inline-flex items-center p-1.5'
                                                     title='View course profile'
                                                 >
                                                     <svg
@@ -1123,7 +1121,7 @@ function HomeContent() {
                                                     setCalendarPopup(idx);
                                                     trackAnalytics("calendar_popup_opened");
                                                 }}
-                                                className='inline-flex shrink-0 items-center rounded-lg border border-slate-700/50 bg-slate-950/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-300'
+                                                className='gm-univ-btn-ghost inline-flex shrink-0 items-center px-2.5 py-1.5 text-xs'
                                                 title='Save to calendar'
                                             >
                                                 <svg
@@ -1144,17 +1142,17 @@ function HomeContent() {
                                             </button>
                                         </div>
                                         <p className='mt-2 text-sm'>
-                                            <span className='font-bold bg-gradient-to-r from-sky-400 to-cyan-400 bg-clip-text text-transparent'>
+                                            <span className='font-bold gm-univ-accent-text'>
                                                 {total.toFixed(1)}%
                                             </span>
-                                            <span className='text-slate-500 ml-2 font-medium'>
+                                            <span className='gm-univ-muted ml-2 font-medium'>
                                                 Grade {band}
                                             </span>
                                         </p>
                                     </div>
                                     <button
                                         onClick={() => removeCourse(idx)}
-                                        className='shrink-0 rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-1.5 text-xs font-medium text-slate-400 backdrop-blur-sm transition-all hover:border-rose-500/50 hover:bg-rose-500/10 hover:text-rose-300'
+                                        className='gm-univ-btn-ghost shrink-0 px-3 py-1.5 text-xs gm-univ-danger'
                                     >
                                         Remove
                                     </button>
@@ -1162,9 +1160,9 @@ function HomeContent() {
 
                                 <div className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
                                     <div className='flex-1'>
-                                        <div className='h-2 overflow-hidden rounded-full bg-slate-800/50 backdrop-blur-sm'>
+                                        <div className='h-2 overflow-hidden rounded-full gm-univ-surface backdrop-blur-sm'>
                                             <div
-                                                className='h-full rounded-full bg-gradient-to-r from-sky-500 via-violet-500 to-emerald-500 shadow-lg shadow-sky-500/30'
+                                                className='gm-univ-progress-fill'
                                                 style={{
                                                     width: `${Math.min(100, total)}%`
                                                 }}
@@ -1182,7 +1180,7 @@ function HomeContent() {
                                                     ) as GradeBand
                                                 )
                                             }
-                                            className='rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-1.5 text-xs font-semibold text-slate-300 backdrop-blur-sm outline-none transition-all focus:border-sky-500/50 focus:bg-slate-900/50 focus:ring-2 focus:ring-sky-500/20'
+                                            className='gm-univ-input px-3 py-1.5 text-xs font-semibold gm-univ-muted-strong'
                                         >
                                             {[4, 5, 6, 7].map((g) => (
                                                 <option key={g} value={g}>
@@ -1195,9 +1193,9 @@ function HomeContent() {
                                                 {isGoalAchievable ? (
                                                     neededOnFinal != null &&
                                                     !requiresPerfectScore ? (
-                                                        <span className='text-slate-400'>
+                                                        <span className='gm-univ-muted'>
                                                             Need{" "}
-                                                            <span className='font-bold text-emerald-400'>
+                                                            <span className='font-bold gm-univ-accent-text'>
                                                                 {neededOnFinal.toFixed(
                                                                     1
                                                                 )}
@@ -1206,13 +1204,13 @@ function HomeContent() {
                                                             on final
                                                         </span>
                                                     ) : (
-                                                        <span className='text-slate-400'>
+                                                        <span className='gm-univ-muted'>
                                                             Grade {c.goalGrade}{" "}
                                                             achievable
                                                         </span>
                                                     )
                                                 ) : (
-                                                    <span className='text-rose-400'>
+                                                    <span className='text-red-600'>
                                                         <span className='font-bold'>
                                                             Grade {c.goalGrade}{" "}
                                                             not achievable
@@ -1236,20 +1234,20 @@ function HomeContent() {
                                     </div>
                                 </div>
 
-                                <div className='overflow-x-auto rounded-xl border border-slate-800/50 bg-slate-950/30 backdrop-blur-sm'>
-                                    <table className='min-w-full divide-y divide-slate-800/50 text-xs'>
-                                        <thead className='bg-slate-900/50'>
+                                <div className='overflow-x-auto rounded-xl border gm-univ-border bg-[rgba(15,23,42,0.03)] backdrop-blur-sm'>
+                                    <table className='min-w-full gm-univ-table min-w-full text-xs text-xs'>
+                                        <thead className='gm-univ-surface'>
                                             <tr>
-                                                <th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400'>
+                                                <th className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider gm-univ-muted'>
                                                     Assessment
                                                 </th>
-                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400'>
+                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider gm-univ-muted'>
                                                     Weight
                                                 </th>
-                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400'>
+                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider gm-univ-muted'>
                                                     Due
                                                 </th>
-                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400'>
+                                                <th className='px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider gm-univ-muted'>
                                                     <span className='inline-flex items-center gap-1.5'>
                                                         Mark
                                                         <button
@@ -1258,7 +1256,7 @@ function HomeContent() {
                                                                 setMarkHelpOpen(true);
                                                                 trackAnalytics("mark_help_opened");
                                                             }}
-                                                            className='rounded p-0.5 text-slate-500 transition-colors hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+                                                            className='rounded p-0.5 gm-univ-muted transition-colors gm-univ-hover-muted-strong focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[rgba(29,158,117,0.3)]'
                                                             aria-label='Mark input help'
                                                         >
                                                             <svg
@@ -1282,7 +1280,7 @@ function HomeContent() {
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className='divide-y divide-slate-900/60'>
+                                        <tbody className='divide-y divide-[rgba(15,23,42,0.08)]'>
                                             {c.course.items.map((item, i) => {
                                                 const isPassFail =
                                                     item.weight === "pass/fail";
@@ -1290,11 +1288,11 @@ function HomeContent() {
                                                 return (
                                                     <tr
                                                         key={item.name + i}
-                                                        className='hover:bg-slate-900/70'
+                                                        className='gm-univ-hover-surface-white/70'
                                                     >
                                                         <td className='px-4 py-3 align-middle'>
                                                             <div className='flex items-center gap-2 max-w-xs flex-wrap'>
-                                                                <div className='text-sm font-semibold text-slate-100'>
+                                                                <div className='text-sm font-semibold gm-univ-fg'>
                                                                     {item.name}
                                                                 </div>
                                                                 {!isPassFail && (
@@ -1362,7 +1360,7 @@ function HomeContent() {
                                                                                 "assessment_calculator_opened"
                                                                             );
                                                                         }}
-                                                                        className='inline-flex shrink-0 items-center rounded-md border border-slate-600/50 bg-slate-900/50 p-1 text-slate-400 transition-colors hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300'
+                                                                        className='inline-flex shrink-0 items-center rounded-md border border-[rgba(15,23,42,0.12)] gm-univ-surface p-1 gm-univ-muted transition-colors hover:border-[var(--gm-accent)] hover:bg-[var(--gm-accent-soft)] hover:text-[var(--gm-accent)]'
                                                                         title='Calculator for this assessment'
                                                                         aria-label='Open assessment calculator'
                                                                     >
@@ -1401,7 +1399,7 @@ function HomeContent() {
                                                                     Pass/fail
                                                                 </span>
                                                             ) : (
-                                                                <span className='font-semibold text-slate-200'>
+                                                                <span className='font-semibold gm-univ-body'>
                                                                     {typeof item.weight ===
                                                                     "number"
                                                                         ? item.weight.toFixed(
@@ -1412,13 +1410,13 @@ function HomeContent() {
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className='px-4 py-3 text-right align-middle text-slate-400 text-xs'>
+                                                        <td className='px-4 py-3 text-right align-middle gm-univ-muted text-xs'>
                                                             {item.dueDate ??
                                                                 "—"}
                                                         </td>
                                                         <td className='px-3 py-2 text-right align-middle'>
                                                             {isPassFail ? (
-                                                                <span className='text-xs text-slate-400'>
+                                                                <span className='text-xs gm-univ-muted'>
                                                                     Pass
                                                                 </span>
                                                             ) : (
@@ -1475,7 +1473,7 @@ function HomeContent() {
                                                                                                     .value
                                                                                             )
                                                                                         }
-                                                                                        className='w-28 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1.5 pr-14 text-right text-sm font-semibold text-slate-50 outline-none backdrop-blur-sm placeholder:text-emerald-400/70 transition-all focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 focus:bg-slate-900/70'
+                                                                                        className='w-28 rounded-lg border gm-univ-border-strong gm-univ-surface px-3 py-1.5 pr-14 text-right text-sm font-semibold gm-univ-fg outline-none backdrop-blur-sm placeholder:text-[rgba(15,23,42,0.35)] transition-all focus:ring-2 focus:ring-2 focus:ring-[rgba(29,158,117,0.3)] focus:border-[var(--gm-accent)] focus:bg-white/90'
                                                                                     />
                                                                                 ) : (
                                                                                     <input
@@ -1497,7 +1495,7 @@ function HomeContent() {
                                                                                                     .value
                                                                                             )
                                                                                         }
-                                                                                        className='w-28 rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1.5 text-right text-sm font-semibold text-slate-50 outline-none backdrop-blur-sm placeholder:text-slate-600 transition-all focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 focus:bg-slate-900/70'
+                                                                                        className='w-28 rounded-lg border gm-univ-border-strong gm-univ-surface px-3 py-1.5 text-right text-sm font-semibold gm-univ-fg outline-none backdrop-blur-sm placeholder:text-[rgba(15,23,42,0.45)] transition-all focus:ring-2 focus:ring-2 focus:ring-[rgba(29,158,117,0.3)] focus:border-[var(--gm-accent)] focus:bg-white/90'
                                                                                     />
                                                                                 )}
                                                                             </div>
@@ -1530,7 +1528,7 @@ function HomeContent() {
                                                                                         null
                                                                                     ) {
                                                                                         return (
-                                                                                            <span className='text-xs font-semibold text-emerald-400'>
+                                                                                            <span className='text-xs font-semibold gm-univ-accent-text'>
                                                                                                 —
                                                                                             </span>
                                                                                         );
@@ -1550,7 +1548,7 @@ function HomeContent() {
                                                                                             denom) *
                                                                                         100;
                                                                                     return (
-                                                                                        <span className='text-xs font-semibold text-emerald-400'>
+                                                                                        <span className='text-xs font-semibold gm-univ-accent-text'>
                                                                                             {
                                                                                                 nn
                                                                                             }
@@ -1596,7 +1594,7 @@ function HomeContent() {
 
                                                                                 return (
                                                                                     <span
-                                                                                        className={`text-xs font-semibold ${!c.marks[i] && fillerMarks[i] != null ? "text-emerald-400" : "text-slate-500"}`}
+                                                                                        className={`text-xs font-semibold ${!c.marks[i] && fillerMarks[i] != null ? "gm-univ-accent-text" : "gm-univ-muted"}`}
                                                                                     >
                                                                                         {percentage.toFixed(
                                                                                             0
@@ -1622,8 +1620,8 @@ function HomeContent() {
                     })}
                 </section>
 
-                <footer className='mt-12 border-t border-slate-800 pt-6 text-center'>
-                    <p className='text-xs text-slate-500 mb-3'>
+                <footer className='mt-12 border-t gm-univ-border pt-6 text-center'>
+                    <p className='text-xs gm-univ-muted mb-3'>
                         Not affiliated with UQ. All data is scraped from UQ
                         course profiles. Please verify information on the
                         official UQ website. This tool is for convenience only
@@ -1631,10 +1629,10 @@ function HomeContent() {
                         your grades, missed hurdles and deadlines, or that
                         Netflix binge two days before the final.
                     </p>
-                    <p className='text-xs text-slate-500'>
+                    <p className='text-xs gm-univ-muted'>
                         <a
                             href='mailto:vincemlapore@gmail.com?subject=UQ%20Grades%20(uqgrades.com)'
-                            className='text-slate-400 hover:text-slate-300 underline underline-offset-2'
+                            className='gm-univ-muted gm-univ-hover-muted-strong underline underline-offset-2'
                         >
                             Report bugs, compliments, or feature ideas
                         </a>
@@ -1643,28 +1641,28 @@ function HomeContent() {
                             href='https://vincelapore.com'
                             target='_blank'
                             rel='noopener noreferrer'
-                            className='text-slate-400 hover:text-slate-300 underline underline-offset-2'
+                            className='gm-univ-muted gm-univ-hover-muted-strong underline underline-offset-2'
                         >
                             me
                         </a>
                     </p>
-                    <p className='text-xs text-slate-500 mt-2'></p>
+                    <p className='text-xs gm-univ-muted mt-2'></p>
                 </footer>
             </main>
 
             {/* Mark help popup */}
             {markHelpOpen && (
                 <div
-                    className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4'
+                    className='fixed inset-0 z-50 flex items-center justify-center gm-univ-modal-overlay backdrop-blur-sm p-4'
                     onClick={() => setMarkHelpOpen(false)}
                 >
                     <div
-                        className='relative w-full max-w-xl rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-slate-900/95 p-6 shadow-2xl backdrop-blur-xl'
+                        className='relative gm-univ-modal w-full max-w-xl rounded-xl p-6'
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
                             onClick={() => setMarkHelpOpen(false)}
-                            className='absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-200'
+                            className='absolute right-4 top-4 rounded-lg p-1.5 gm-univ-muted transition-all gm-univ-hover-surface gm-univ-hover-fg'
                             aria-label='Close'
                         >
                             <svg
@@ -1684,17 +1682,17 @@ function HomeContent() {
 
                         <div className='space-y-4'>
                             <div>
-                                <h2 className='text-xl font-bold tracking-tight text-slate-50'>
+                                <h2 className='text-xl font-bold tracking-tight gm-univ-fg'>
                                     How to enter marks
                                 </h2>
                             </div>
 
-                            <div className='space-y-3 text-sm text-slate-200'>
+                            <div className='space-y-3 text-sm gm-univ-body'>
                                 <div>
-                                    <p className='font-semibold text-slate-100'>
+                                    <p className='font-semibold gm-univ-fg'>
                                         1. Enter a percentage
                                     </p>
-                                    <p className='mt-1 text-slate-300'>
+                                    <p className='mt-1 gm-univ-muted-strong'>
                                         Type a number like{" "}
                                         <span className='font-mono'>50</span>{" "}
                                         for{" "}
@@ -1703,10 +1701,10 @@ function HomeContent() {
                                 </div>
 
                                 <div>
-                                    <p className='font-semibold text-slate-100'>
+                                    <p className='font-semibold gm-univ-fg'>
                                         2. Enter marks out of a total
                                     </p>
-                                    <p className='mt-1 text-slate-300'>
+                                    <p className='mt-1 gm-univ-muted-strong'>
                                         Use a fraction like{" "}
                                         <span className='font-mono'>8/10</span>{" "}
                                         or{" "}
@@ -1716,11 +1714,11 @@ function HomeContent() {
                                 </div>
 
                                 <div>
-                                    <p className='font-semibold text-slate-100'>
+                                    <p className='font-semibold gm-univ-fg'>
                                         3. See required marks for your goal
                                         grade
                                     </p>
-                                    <p className='mt-1 text-slate-300'>
+                                    <p className='mt-1 gm-univ-muted-strong'>
                                         Type{" "}
                                         <span className='font-mono'>/50</span>{" "}
                                         in a mark field to see how many marks
@@ -1746,16 +1744,16 @@ function HomeContent() {
 
                     return (
                         <div
-                            className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4'
+                            className='fixed inset-0 z-50 flex items-center justify-center gm-univ-modal-overlay backdrop-blur-sm p-4'
                             onClick={() => setCalendarPopup(null)}
                         >
                             <div
-                                className='relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-slate-900/95 p-8 shadow-2xl backdrop-blur-xl'
+                                className='relative gm-univ-modal w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl p-8'
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button
                                     onClick={() => setCalendarPopup(null)}
-                                    className='absolute right-6 top-6 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-200'
+                                    className='absolute right-6 top-6 rounded-lg p-1.5 gm-univ-muted transition-all gm-univ-hover-surface gm-univ-hover-fg'
                                     aria-label='Close'
                                 >
                                     <svg
@@ -1775,16 +1773,16 @@ function HomeContent() {
 
                                 <div className='space-y-6'>
                                     <div>
-                                        <h2 className='text-2xl font-bold tracking-tight text-slate-50'>
+                                        <h2 className='text-2xl font-bold tracking-tight gm-univ-fg'>
                                             Calendar Events
                                         </h2>
-                                        <p className='mt-1.5 text-sm font-medium text-slate-400'>
+                                        <p className='mt-1.5 text-sm font-medium gm-univ-muted'>
                                             {course.course.courseCode} -{" "}
                                             {allEvents.length} event
                                             {allEvents.length !== 1 ? "s" : ""}
                                             {selectedEvents.length !==
                                                 allEvents.length && (
-                                                <span className='text-slate-500'>
+                                                <span className='gm-univ-muted'>
                                                     {" "}
                                                     ({
                                                         selectedEvents.length
@@ -1796,8 +1794,8 @@ function HomeContent() {
                                     </div>
 
                                     {allEvents.length === 0 ? (
-                                        <div className='rounded-xl border border-slate-800/50 bg-slate-900/30 p-6 text-center'>
-                                            <p className='text-sm text-slate-400'>
+                                        <div className='rounded-xl border gm-univ-border gm-univ-surface p-6 text-center'>
+                                            <p className='text-sm gm-univ-muted'>
                                                 No due dates found for this
                                                 course.
                                             </p>
@@ -1817,7 +1815,7 @@ function HomeContent() {
                                                                 )
                                                             )
                                                         }
-                                                        className='text-sm text-slate-400 hover:text-slate-200'
+                                                        className='text-sm gm-univ-muted gm-univ-hover-fg'
                                                     >
                                                         Deselect all
                                                     </button>
@@ -1831,7 +1829,7 @@ function HomeContent() {
                                                                 )
                                                             )
                                                         }
-                                                        className='text-sm text-slate-400 hover:text-slate-200'
+                                                        className='text-sm gm-univ-muted gm-univ-hover-fg'
                                                     >
                                                         Select all
                                                     </button>
@@ -1842,15 +1840,15 @@ function HomeContent() {
                                                     (event, index) => (
                                                         <label
                                                             key={index}
-                                                            className='flex cursor-pointer items-center gap-4 rounded-xl border border-slate-800/50 bg-slate-900/30 p-4 transition-all hover:bg-slate-900/50 has-[:checked]:border-sky-500/50 has-[:checked]:bg-sky-500/10 has-[:checked]:shadow-[0_0_0_1px_rgba(14,165,233,0.15)]'
+                                                            className='flex cursor-pointer items-center gap-4 rounded-xl border gm-univ-border gm-univ-surface p-4 transition-all gm-univ-hover-surface has-[:checked]:border-[var(--gm-accent)] has-[:checked]:bg-[var(--gm-accent-soft)] has-[:checked]:shadow-[0_0_0_1px_rgba(29,158,117,0.2)]'
                                                         >
                                                             <div className='min-w-0 flex-1'>
-                                                                <h3 className='text-base font-semibold text-slate-50'>
+                                                                <h3 className='text-base font-semibold gm-univ-fg'>
                                                                     {
                                                                         event.title
                                                                     }
                                                                 </h3>
-                                                                <div className='mt-2 space-y-1 text-sm text-slate-400'>
+                                                                <div className='mt-2 space-y-1 text-sm gm-univ-muted'>
                                                                     <div className='flex items-center gap-2'>
                                                                         <svg
                                                                             className='h-4 w-4 shrink-0'
@@ -1883,7 +1881,7 @@ function HomeContent() {
                                                                         </span>
                                                                     </div>
                                                                     {event.description && (
-                                                                        <p className='text-xs text-slate-500 mt-1'>
+                                                                        <p className='text-xs gm-univ-muted mt-1'>
                                                                             {
                                                                                 event.description
                                                                             }
@@ -1915,7 +1913,7 @@ function HomeContent() {
                                                                         }
                                                                     )
                                                                 }
-                                                                className='h-4 w-4 shrink-0 rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-2 focus:ring-sky-500/50'
+                                                                className='h-4 w-4 shrink-0 rounded gm-univ-border-strong gm-univ-surface text-[var(--gm-accent)] focus:ring-2 focus:ring-2 focus:ring-[rgba(29,158,117,0.3)]'
                                                             />
                                                         </label>
                                                     )
@@ -1925,7 +1923,7 @@ function HomeContent() {
                                     )}
 
                                     {allEvents.length > 0 && (
-                                        <div className='flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-800/50'>
+                                        <div className='flex flex-wrap items-center justify-end gap-3 pt-4 border-t gm-univ-border'>
                                             {selectedEvents.length === 0 && (
                                                 <p className='text-sm text-amber-400'>
                                                     Select at least one event to
@@ -1970,7 +1968,7 @@ function HomeContent() {
                                                     URL.revokeObjectURL(url);
                                                     trackAnalytics("calendar_export");
                                                 }}
-                                                className='inline-flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 backdrop-blur-sm transition-all hover:border-emerald-500 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-emerald-500/50 disabled:hover:bg-emerald-500/10'
+                                                className='gm-univ-btn-primary inline-flex items-center gap-2 px-5 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50'
                                             >
                                                 <svg
                                                     className='h-4 w-4'
@@ -1989,7 +1987,7 @@ function HomeContent() {
                                                 {selectedEvents.length > 0 &&
                                                     selectedEvents.length !==
                                                         allEvents.length && (
-                                                        <span className='text-emerald-400/80'>
+                                                        <span className='gm-univ-accent-text opacity-80'>
                                                             (
                                                             {
                                                                 selectedEvents.length
@@ -2090,16 +2088,16 @@ function HomeContent() {
 
                     return (
                         <div
-                            className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4'
+                            className='fixed inset-0 z-50 flex items-center justify-center gm-univ-modal-overlay backdrop-blur-sm p-4'
                             onClick={() => setHurdlePopup(null)}
                         >
                             <div
-                                className='relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-slate-900/95 p-6 shadow-2xl backdrop-blur-xl'
+                                className='relative gm-univ-modal w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl p-6'
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button
                                     onClick={() => setHurdlePopup(null)}
-                                    className='absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-200'
+                                    className='absolute right-4 top-4 rounded-lg p-1.5 gm-univ-muted transition-all gm-univ-hover-surface gm-univ-hover-fg'
                                     aria-label='Close'
                                 >
                                     <svg
@@ -2121,10 +2119,10 @@ function HomeContent() {
                                         <span className='inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400'>
                                             Hurdle
                                         </span>
-                                        <h2 className='mt-2 text-lg font-bold tracking-tight text-slate-50'>
+                                        <h2 className='mt-2 text-lg font-bold tracking-tight gm-univ-fg'>
                                             {item.name}
                                         </h2>
-                                        <p className='text-sm text-slate-400'>
+                                        <p className='text-sm gm-univ-muted'>
                                             {course.course.courseCode}
                                         </p>
                                     </div>
@@ -2134,14 +2132,14 @@ function HomeContent() {
                                         </p>
                                     )}
                                     {hurdleText && (
-                                        <div className='rounded-xl border border-slate-800/50 bg-slate-900/30 p-4'>
-                                            <p className='whitespace-pre-wrap text-sm text-slate-300'>
+                                        <div className='rounded-xl border gm-univ-border gm-univ-surface p-4'>
+                                            <p className='whitespace-pre-wrap text-sm gm-univ-muted-strong'>
                                                 {hurdleText}
                                             </p>
                                         </div>
                                     )}
                                     {!hurdleText && !threshold && (
-                                        <p className='text-sm text-slate-500'>
+                                        <p className='text-sm gm-univ-muted'>
                                             No hurdle details available for this
                                             item.
                                         </p>
@@ -2151,7 +2149,7 @@ function HomeContent() {
                                             href={`${course.course.courseProfileUrl}#assessment`}
                                             target='_blank'
                                             rel='noopener noreferrer'
-                                            className='inline-flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-950/50 px-4 py-2 text-sm font-medium text-sky-400 transition-all hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-300'
+                                            className='gm-univ-btn-ghost inline-flex items-center gap-2 px-4 py-2 text-sm'
                                         >
                                             <svg
                                                 className='h-4 w-4'
@@ -2180,14 +2178,16 @@ function HomeContent() {
 
 export default function Home() {
     return (
-        <Suspense
-            fallback={
-                <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-400'>
-                    Loading...
-                </div>
-            }
-        >
-            <HomeContent />
-        </Suspense>
+        <GmShell variant='marketing' showFooter={true}>
+            <Suspense
+                fallback={
+                    <div className='gm-univ-page flex min-h-[50vh] items-center justify-center gm-univ-muted'>
+                        Loading…
+                    </div>
+                }
+            >
+                <HomeContent />
+            </Suspense>
+        </GmShell>
     );
 }

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { DM_Mono, DM_Serif_Display, Inter, Outfit } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -7,6 +7,26 @@ const inter = Inter({
     variable: "--font-inter",
     subsets: ["latin"],
     display: "swap",
+});
+
+const gmOutfit = Outfit({
+    variable: "--font-gm-outfit",
+    subsets: ["latin"],
+    display: "swap",
+});
+
+const gmSerif = DM_Serif_Display({
+    variable: "--font-gm-serif",
+    subsets: ["latin"],
+    display: "swap",
+    weight: ["400"],
+});
+
+const gmMono = DM_Mono({
+    variable: "--font-gm-mono",
+    subsets: ["latin"],
+    display: "swap",
+    weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -40,7 +60,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang='en'>
-            <body className={`${inter.variable} font-sans antialiased`}>
+            <body
+                className={`${inter.variable} ${gmOutfit.variable} ${gmSerif.variable} ${gmMono.variable} font-sans antialiased`}
+            >
                 {children}
                 <Analytics />
             </body>
