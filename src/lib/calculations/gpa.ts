@@ -3,6 +3,7 @@ import {
   parseMarkToPercentage,
   percentToGradeBand,
   type GradeBand,
+  type WeightedMark,
 } from "@/lib/grades";
 import { gradePointToTargetPercent, uqPercentToGradePoint } from "./grades";
 
@@ -10,6 +11,9 @@ export type AssessmentRow = {
   weighting: number;
   mark: string | null;
   due_date: string | null;
+  sub_assessments?: {
+    rows: { name: string; mark: string | null; weight?: number }[];
+  } | null;
 };
 
 export type SubjectRow = {
@@ -136,25 +140,46 @@ export function computeSemesterCurrentAndOverall(
   const currents: number[] = [];
 
   for (const assessments of courseAssessments) {
+    const flat: WeightedMark[] = [];
+    for (const a of assessments) {
+      const rows = a.sub_assessments?.rows;
+      const hasParts = (rows?.length ?? 0) > 1;
+      if (hasParts) {
+        const rawWeights = rows!.map((r) =>
+          typeof (r as { weight?: number }).weight === "number" &&
+          Number.isFinite((r as { weight?: number }).weight) &&
+          (r as { weight?: number }).weight! > 0
+            ? (r as { weight?: number }).weight!
+            : 0,
+        );
+        const wSum = rawWeights.reduce((s, w) => s + w, 0);
+        const denom = wSum > 0 ? wSum : rows!.length;
+        rows!.forEach((r, idx) => {
+          const share =
+            denom > 0
+              ? (wSum > 0 ? rawWeights[idx]! / denom : 1 / denom)
+              : 0;
+          const markStr =
+            r.mark == null ? null : String(r.mark).trim() ? String(r.mark).trim() : null;
+          flat.push({ weight: a.weighting * share, mark: markStr });
+        });
+        continue;
+      }
+      flat.push({ weight: a.weighting, mark: a.mark ?? null });
+    }
+
     // Overall: exactly matches `/university/uq` semantics — unmarked contribute 0.
     overalls.push(
-      calculateWeightedTotal(
-        assessments.map((a) => ({
-          weight: a.weighting,
-          mark: a.mark ?? null,
-        })),
-      ),
+      calculateWeightedTotal(flat),
     );
 
     let markedSum = 0;
     let markedWeightSum = 0;
-    for (const a of assessments) {
-      const p = markToPercent(a.mark);
+    for (const it of flat) {
+      const p = markToPercent(typeof it.mark === "string" ? it.mark : null);
       if (p == null || Number.isNaN(p)) continue;
       const w =
-        typeof a.weighting === "number" && Number.isFinite(a.weighting)
-          ? a.weighting
-          : 0;
+        typeof it.weight === "number" && Number.isFinite(it.weight) ? it.weight : 0;
       markedWeightSum += w;
       markedSum += (p * w) / 100;
     }

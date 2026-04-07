@@ -1,6 +1,5 @@
 "use client";
 
-import { calculateEqualDistributionMarks } from "@/lib/grades";
 import { parseMarkToPercentage } from "@/lib/grades";
 import { isValidMarkInput } from "@/lib/mark-input";
 import { setWeightAt, withEqualWeightsFromRows } from "@/lib/sub-assessment";
@@ -8,7 +7,8 @@ import type { SubAssessmentRow } from "@/lib/state";
 
 type Props = {
   assessmentName: string;
-  goalMarkPercent: number | null;
+  requiredMark: number | null;
+  hideGoal?: boolean;
   assessmentCourseWeightPercent: number;
   rows: SubAssessmentRow[];
   onRowsChange: (rows: SubAssessmentRow[]) => void;
@@ -26,26 +26,57 @@ function handleMarkChange(value: string, onUpdate: (v: string) => void): void {
 
 export function AssessmentCalculatorInline({
   assessmentName,
-  goalMarkPercent,
+  requiredMark,
+  hideGoal = false,
   assessmentCourseWeightPercent,
   rows,
   onRowsChange,
 }: Props) {
   const courseWt = Math.max(0, Math.round(assessmentCourseWeightPercent));
+  const weights = rows.map((r) => (typeof r.weight === "number" ? r.weight : 0));
   const weightSumRaw = rows.reduce(
     (s, r) => s + (typeof r.weight === "number" ? r.weight : 0),
     0,
   );
-  const fillerMarks =
-    goalMarkPercent != null
-      ? calculateEqualDistributionMarks(
-          rows.map((r) => ({
-            weight: typeof r.weight === "number" ? r.weight : 0,
-            mark: r.mark,
-          })),
-          goalMarkPercent,
-        )
-      : rows.map(() => null as number | null);
+
+  const partsMath = (() => {
+    const totalWeightRaw = weights.reduce((s, w) => s + (w > 0 ? w : 0), 0);
+    const useEqual = totalWeightRaw <= 0;
+    const totalWeight = useEqual ? Math.max(1, rows.length) : totalWeightRaw;
+
+    const enteredPcts = rows.map((r) => {
+      const raw = r.mark == null ? "" : String(r.mark).trim();
+      const pct =
+        raw !== "" && isValidMarkInput(raw) ? parseMarkToPercentage(raw) : null;
+      return pct != null && Number.isFinite(pct) && !Number.isNaN(pct)
+        ? pct
+        : null;
+    });
+
+    let earnedPercent = 0;
+    let remainingWeight = 0;
+    for (let i = 0; i < enteredPcts.length; i++) {
+      const w = useEqual ? 1 : Math.max(0, weights[i] ?? 0);
+      const p = enteredPcts[i];
+      if (p == null) {
+        remainingWeight += w;
+      } else {
+        earnedPercent += (p * w) / totalWeight;
+      }
+    }
+
+    const bestPossible =
+      earnedPercent + (remainingWeight > 0 ? (100 * remainingWeight) / totalWeight : 0);
+
+    return {
+      totalWeight,
+      useEqual,
+      enteredPcts,
+      earnedPercent,
+      remainingWeight,
+      bestPossible,
+    };
+  })();
 
   const updateRow = (index: number, patch: Partial<SubAssessmentRow>) => {
     const next = rows.map((r, i) => (i === index ? { ...r, ...patch } : r));
@@ -95,58 +126,25 @@ export function AssessmentCalculatorInline({
       ) : (
         <div className="gm-dash-parts-grid">
           {rows.map((row, i) => {
-            const showPlaceholder = !row.mark && fillerMarks[i] != null;
             const w = typeof row.weight === "number" ? row.weight : 0;
             const raw = row.mark == null ? "" : String(row.mark);
-            const slashOnly = raw.trim().match(/^\/(\d+)$/);
-            const slashDenom = slashOnly ? parseInt(slashOnly[1]!, 10) : null;
             const livePct =
               raw.trim() !== "" && isValidMarkInput(raw)
                 ? parseMarkToPercentage(raw.trim())
                 : null;
-            const markHint = (() => {
-              if (slashDenom != null) {
-                const requiredPct = fillerMarks[i];
-                if (requiredPct == null) {
-                  return (
-                    <span className="gm-dash-parts-hint gm-dash-mark-pct--accent">
-                      —
-                    </span>
-                  );
-                }
-                const nn = Math.min(
-                  slashDenom,
-                  Math.ceil((requiredPct * slashDenom) / 100),
-                );
-                const actualPct = (nn / slashDenom) * 100;
-                const pctStr =
-                  actualPct >= 100
-                    ? "100"
-                    : actualPct <= 0
-                      ? "0"
-                      : actualPct.toFixed(1);
-                return (
-                  <span className="gm-dash-parts-hint gm-dash-mark-pct--accent">
-                    {nn}/{slashDenom} ({pctStr}%)
-                  </span>
-                );
-              }
-              if (livePct != null && !Number.isNaN(livePct)) {
-                return (
-                  <span className="gm-dash-parts-hint">
-                    {livePct.toFixed(0)}%
-                  </span>
-                );
-              }
-              if (!raw.trim() && fillerMarks[i] != null) {
-                return (
-                  <span className="gm-dash-parts-hint gm-dash-mark-pct--accent">
-                    ~{fillerMarks[i]!.toFixed(0)}%
-                  </span>
-                );
-              }
-              return null;
-            })();
+            const showGoalPlaceholder =
+              livePct == null &&
+              !hideGoal &&
+              requiredMark != null &&
+              Number.isFinite(requiredMark);
+            const clampedRequired =
+              requiredMark != null && Number.isFinite(requiredMark)
+                ? Math.max(0, Math.min(100, requiredMark))
+                : null;
+            const displayRequired =
+              clampedRequired == null
+                ? null
+                : Math.min(100, Math.ceil((clampedRequired - 1e-9) * 10) / 10);
             return (
               <div key={i} className="gm-dash-parts-row">
                 <input
@@ -176,17 +174,20 @@ export function AssessmentCalculatorInline({
                   <input
                     type="text"
                     inputMode="decimal"
-                    placeholder={showPlaceholder ? fillerMarks[i]!.toFixed(0) : "8/10"}
-                    value={showPlaceholder ? "" : row.mark ?? ""}
+                    placeholder={
+                      showGoalPlaceholder && displayRequired != null
+                        ? `~${Math.ceil(displayRequired)}%`
+                        : ""
+                    }
+                    value={row.mark ?? ""}
                     onChange={(e) =>
                       handleMarkChange(e.target.value, (v) =>
                         updateRow(i, { mark: v === "" ? null : v }),
                       )
                     }
-                    className="gm-dash-parts-input gm-dash-parts-num"
+                    className={`gm-dash-parts-input gm-dash-parts-num ${showGoalPlaceholder ? "gm-dash-parts-input--goal" : ""}`}
                     aria-label={`Mark for ${row.name || `part ${i + 1}`}`}
                   />
-                  {markHint}
                   <button
                     type="button"
                     disabled={rows.length <= 1}

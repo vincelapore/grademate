@@ -373,6 +373,29 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+.gm-landing-disclaimer {
+  padding: 0 2rem 3rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 1.25rem;
+  border-top: 0.5px solid var(--color-border-tertiary);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-tertiary);
+}
+
+.gm-landing-disclaimer p {
+  margin: 0.75rem 0 0;
+}
+
+@media (max-width: 640px) {
+  .gm-landing-disclaimer {
+    padding: 0 1rem 2.25rem;
+    font-size: 12.5px;
+  }
+}
+
 .gm-price-card {
   border: 0.5px solid var(--color-border-tertiary);
   border-radius: 12px;
@@ -391,15 +414,55 @@
   letter-spacing: 1px;
   margin-bottom: 8px;
 }
+.gm-price-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e1f5ee;
+  color: #0f6e56;
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.gm-price-badge.subtle {
+  background: rgba(225, 245, 238, 0.65);
+  color: #0f6e56;
+}
+.gm-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 2px;
+}
 .gm-price-amount {
   font-family: var(--font-gm-serif, serif);
-  font-size: 32px;
-  margin-bottom: 4px;
+  font-size: 36px;
+  margin-bottom: 0;
 }
-.gm-price-cadence {
+.gm-price-suffix {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-gm-outfit, var(--font-inter)), -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.gm-price-cadence,
+.gm-price-secondary {
   font-size: 12px;
   color: var(--color-text-tertiary);
   margin-bottom: 1rem;
+}
+.gm-price-secondary {
+  margin-bottom: 6px;
+}
+.gm-price-save {
+  font-size: 12px;
+  color: #1d9e75;
+  margin-bottom: 1rem;
+  font-family: var(--font-gm-outfit, var(--font-inter)), -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .gm-price-features {
   list-style: none;
@@ -447,6 +510,12 @@
   border: none;
 }
 
+@media (max-width: 760px) {
+  .gm-price-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gm-footer {
   padding: 1.5rem 2rem;
   border-top: 0.5px solid var(--color-border-tertiary);
@@ -478,20 +547,75 @@
   padding: 2.5rem 2rem;
 }
 
+@media (max-width: 640px) {
+  .gm-container {
+    padding: 1.25rem 1rem;
+  }
+}
+
 /* --- Dashboard: calm canvas, one visual language, low noise --- */
 .gm-dash-page {
   --gm-accent: #1d9e75;
   --gm-accent-soft: #e1f5ee;
-  --color-text-primary: #0b1220;
-  --color-text-secondary: rgba(15, 23, 42, 0.7);
-  --color-text-tertiary: rgba(15, 23, 42, 0.52);
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #eef1f4;
-  --color-border-secondary: rgba(15, 23, 42, 0.14);
-  --color-border-tertiary: rgba(15, 23, 42, 0.09);
+  --gm-assess-dot-empty-stroke: rgba(15, 23, 42, 0.22);
+  --gm-assess-dot-filled-stroke: rgba(15, 23, 42, 0.06);
   min-height: 100vh;
   background: var(--color-background-secondary);
   color: var(--color-text-primary);
+}
+
+@media (max-width: 640px) {
+  .gm-dash-page {
+    font-size: 16px;
+  }
+}
+
+/* Dashboard dark-mode polish (inherit global tokens, tune surfaces/shadows). */
+@media (prefers-color-scheme: dark) {
+  .gm-dash-page {
+    --gm-assess-dot-empty-stroke: rgba(231, 237, 247, 0.34);
+    --gm-assess-dot-filled-stroke: rgba(231, 237, 247, 0.18);
+  }
+
+  .gm-dash-overall-col-inner {
+    border-color: var(--color-border-secondary);
+    background: color-mix(
+      in srgb,
+      var(--color-background-primary) 80%,
+      var(--color-background-secondary)
+    );
+  }
+
+  .gm-dash-grade-block,
+  .gm-dash-card,
+  .gm-dash-table-wrap,
+  .gm-dash-table tbody tr {
+    border-color: var(--color-border-secondary);
+    box-shadow: none;
+  }
+
+  .gm-dash-table th {
+    background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+  }
+
+  .gm-dash-menu,
+  .gm-dash-cal-popover,
+  .gm-dash-modal-panel {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .gm-dash-modal-backdrop {
+    background: rgba(0, 0, 0, 0.62);
+  }
+
+  .gm-dash-parts-add,
+  .gm-dash-parts-split {
+    background: color-mix(
+      in srgb,
+      var(--color-background-primary) 70%,
+      var(--color-background-secondary)
+    );
+  }
 }
 
 .gm-dash-header-bar {
@@ -514,12 +638,233 @@
   min-width: 0;
 }
 
+.gm-dash-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gm-dash-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border: 0.5px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.gm-dash-tab:hover {
+  color: var(--gm-accent);
+  border-color: rgba(29, 158, 117, 0.32);
+  background: color-mix(in srgb, var(--gm-accent) 12%, transparent);
+}
+
+.gm-dash-tab--active {
+  color: var(--gm-accent);
+  border-color: rgba(29, 158, 117, 0.42);
+  background: rgba(29, 158, 117, 0.10);
+}
+
 .gm-dash-header-right {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+.gm-dash-overall-board {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 6px 2px 14px;
+  scroll-snap-type: x proximity;
+}
+
+.gm-dash-overall-col {
+  flex: 0 0 300px;
+  max-width: 340px;
+  scroll-snap-align: start;
+}
+
+.gm-dash-overall-col-inner {
+  border-radius: 18px;
+  border: 0.5px solid var(--color-border-tertiary);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 60%,
+    transparent
+  );
+  padding: 12px;
+}
+
+.gm-dash-overall-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.gm-dash-overall-col-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-secondary);
+  line-height: 1.25;
+}
+
+.gm-dash-overall-col-sub {
+  margin-top: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.gm-dash-overall-col-sub-item strong {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-dash-overall-col-sub-dot {
+  color: var(--color-text-tertiary);
+}
+
+.gm-dash-overall-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-dash-overall-course-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 14px;
+  border: 0.5px solid var(--color-border-tertiary);
+  background: var(--color-background-primary);
+  padding: 10px 12px;
+}
+
+.gm-dash-overall-course-code {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  line-height: 1.25;
+}
+
+.gm-dash-overall-course-name {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-text-tertiary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gm-dash-overall-course-grades {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.gm-dash-overall-course-grade {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 58px;
+}
+
+.gm-dash-overall-course-grade-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.gm-dash-overall-course-grade-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .gm-dash-header-bar {
+    gap: 10px 12px;
+    padding-bottom: 1rem;
+  }
+
+  .gm-dash-tab {
+    padding: 8px 12px;
+  }
+
+  .gm-dash-title-row {
+    gap: 10px;
+  }
+
+  .gm-dash-btn {
+    padding: 9px 14px;
+  }
+
+  .gm-dash-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .gm-dash-course-title {
+    font-size: 1.02rem;
+  }
+
+  .gm-dash-overall-board {
+    flex-direction: column;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    gap: 12px;
+    padding: 4px 0 12px;
+  }
+
+  .gm-dash-overall-col {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+  }
+
+  .gm-dash-overall-col-inner {
+    padding: 10px;
+  }
+
+  .gm-dash-overall-course-grade {
+    min-width: 52px;
+  }
+}
+
+@media (max-width: 380px) {
+  .gm-dash-overall-course-grades {
+    gap: 8px;
+  }
+  .gm-dash-overall-course-grade {
+    min-width: 46px;
+  }
+  .gm-dash-overall-course-grade-label {
+    font-size: 10px;
+  }
 }
 
 .gm-dash-btn {
@@ -533,6 +878,7 @@
   cursor: pointer;
   font-family: inherit;
   transition: border-color 0.15s, color 0.15s;
+  min-height: 44px;
 }
 
 a.gm-dash-btn {
@@ -552,8 +898,8 @@ a.gm-dash-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0.5px solid var(--color-border-secondary);
   background: var(--color-background-primary);
@@ -678,7 +1024,23 @@ a.gm-dash-btn {
   color: var(--color-text-primary);
 }
 
-.gm-dash-page-title + .gm-dash-grade-summary {
+.gm-dash-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin: 0 0 4px;
+}
+
+.gm-dash-title-row .gm-dash-page-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.gm-dash-page-title + .gm-dash-grade-summary,
+.gm-dash-title-row + .gm-dash-grade-summary {
   margin-top: 12px;
 }
 
@@ -702,7 +1064,7 @@ a.gm-dash-btn {
 
 .gm-dash-settings-back:hover {
   color: var(--gm-accent);
-  background: rgba(29, 158, 117, 0.08);
+  background: color-mix(in srgb, var(--gm-accent) 14%, transparent);
 }
 
 .gm-dash-grade-summary {
@@ -716,7 +1078,11 @@ a.gm-dash-btn {
   align-items: center;
   border-radius: 14px;
   border: 0.5px dashed var(--color-border-secondary);
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 40%,
+    transparent
+  );
   min-height: 88px;
   padding: 16px 18px;
   font-size: 14px;
@@ -895,6 +1261,13 @@ a.gm-dash-btn {
   scrollbar-width: thin;
 }
 
+@media (max-width: 640px) {
+  .gm-dash-assess-dots {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
 .gm-dash-assess-dots-item {
   display: inline-flex;
   align-items: center;
@@ -1027,6 +1400,80 @@ a.gm-dash-btn {
   font-size: 13px;
 }
 
+@media (max-width: 640px) {
+  /* On phones, tables become stacked rows (no horizontal scroll). */
+  .gm-dash-table-wrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+  .gm-dash-table {
+    min-width: 0;
+  }
+
+  .gm-dash-table thead {
+    display: none;
+  }
+
+  .gm-dash-table,
+  .gm-dash-table tbody,
+  .gm-dash-table tr,
+  .gm-dash-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .gm-dash-table tbody tr {
+    margin-top: 10px;
+    padding: 12px 12px 10px;
+    border-radius: 14px;
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .gm-dash-table tbody tr:first-child {
+    margin-top: 0;
+  }
+
+  .gm-dash-table td {
+    padding: 10px 0;
+    border-bottom: none;
+  }
+
+  /* Make cells read as compact label/value rows (like a list). */
+  .gm-dash-table td:not([data-label="Assessment"]) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .gm-dash-table td:not([data-label="Assessment"])::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+  }
+
+  .gm-dash-table td[data-label="Assessment"] {
+    padding-top: 2px;
+    padding-bottom: 10px;
+  }
+
+  /* When “Mark” is a flex label/value row, keep controls aligned right. */
+  .gm-dash-table td[data-label="Mark"] .gm-dash-mark-cell {
+    justify-content: flex-end;
+  }
+
+  .gm-dash-table tbody tr:hover td {
+    background: transparent;
+  }
+}
+
 .gm-dash-table th {
   text-align: left;
   padding: 10px 14px;
@@ -1054,7 +1501,11 @@ a.gm-dash-btn {
 }
 
 .gm-dash-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 70%,
+    var(--color-background-secondary)
+  );
 }
 
 .gm-dash-assess-name {
@@ -1092,6 +1543,62 @@ a.gm-dash-btn {
   font-family: inherit;
 }
 
+@media (max-width: 640px) {
+  .gm-dash-mark-input {
+    height: 44px;
+    font-size: 16px;
+    width: 5.5rem;
+  }
+
+  .gm-dash-table {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Inline parts editor should be a small form on mobile (not a desktop grid). */
+  .gm-dash-parts {
+    padding: 10px 0 0;
+  }
+
+  .gm-dash-parts-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .gm-dash-parts-name {
+    grid-column: 1 / -1;
+  }
+
+  .gm-dash-parts-due {
+    display: none;
+  }
+
+  .gm-dash-parts-mark {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .gm-dash-parts-input {
+    height: 44px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+
+  .gm-dash-parts-delete {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .gm-dash-parts-add,
+  .gm-dash-parts-split {
+    height: 44px;
+    font-size: 16px;
+  }
+}
+
 .gm-dash-mark-input:focus {
   outline: none;
   border-color: var(--gm-accent);
@@ -1123,8 +1630,8 @@ a.gm-dash-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -1136,6 +1643,16 @@ a.gm-dash-btn {
 .gm-dash-icon-btn:hover {
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
+}
+
+.gm-dash-icon-btn:active {
+  background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.gm-dash-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.22);
 }
 
 .gm-dash-menu {
@@ -1170,7 +1687,7 @@ a.gm-dash-btn {
 }
 
 .gm-dash-menu-item--danger:hover {
-  background: rgba(254, 226, 226, 0.45);
+  background: color-mix(in srgb, #dc2626 12%, transparent);
 }
 
 /* --- Dashboard modals (light, sticky footer pattern) --- */
@@ -1193,18 +1710,9 @@ a.gm-dash-btn {
 }
 
 .gm-dash-modal-panel {
-  /* Portaled modals sit outside .gm-dash-page — pin dashboard light surfaces so
-     controls stay legible regardless of OS dark mode. */
-  color-scheme: light;
+  /* Portaled modals sit outside .gm-dash-page — keep tokens consistent. */
   --gm-accent: #1d9e75;
   --gm-accent-soft: #e1f5ee;
-  --color-text-primary: #0b1220;
-  --color-text-secondary: rgba(15, 23, 42, 0.78);
-  --color-text-tertiary: rgba(15, 23, 42, 0.58);
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #eef1f4;
-  --color-border-secondary: rgba(15, 23, 42, 0.2);
-  --color-border-tertiary: rgba(15, 23, 42, 0.14);
   display: flex;
   max-height: min(90vh, 720px);
   width: 100%;
@@ -1216,6 +1724,22 @@ a.gm-dash-btn {
   background: var(--color-background-primary);
   color: var(--color-text-primary);
   box-shadow: 0 24px 56px rgba(15, 23, 42, 0.14);
+}
+
+@media (max-width: 640px) {
+  .gm-dash-modal-panel {
+    max-height: min(92dvh, 720px);
+    border-radius: 14px;
+  }
+  .gm-dash-modal-header {
+    padding: 16px 48px 12px 16px;
+  }
+  .gm-dash-modal-body {
+    padding: 16px;
+  }
+  .gm-dash-modal-footer {
+    padding: 12px 16px;
+  }
 }
 
 .gm-dash-modal-panel--sm {
@@ -1348,18 +1872,10 @@ a.gm-dash-btn {
   margin-top: 4px;
   padding: 18px;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  background: #ffffff;
-  color-scheme: light;
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-background-primary);
   --gm-accent: #1d9e75;
   --gm-accent-soft: #e1f5ee;
-  --color-text-primary: #0b1220;
-  --color-text-secondary: rgba(15, 23, 42, 0.78);
-  --color-text-tertiary: rgba(15, 23, 42, 0.58);
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #eef1f4;
-  --color-border-secondary: rgba(15, 23, 42, 0.2);
-  --color-border-tertiary: rgba(15, 23, 42, 0.14);
   color: var(--color-text-primary);
 }
 
@@ -1616,7 +2132,7 @@ a.gm-dash-btn {
 .gm-dash-modal-btn:hover:not(:disabled) {
   border-color: var(--gm-accent);
   color: var(--gm-accent);
-  background: rgba(29, 158, 117, 0.06);
+  background: color-mix(in srgb, var(--gm-accent) 12%, transparent);
 }
 
 .gm-dash-modal-btn:disabled {
@@ -1638,12 +2154,12 @@ a.gm-dash-btn {
 
 .gm-dash-modal-btn--danger {
   border-color: rgba(220, 38, 38, 0.35);
-  background: rgba(254, 242, 242, 0.95);
+  background: color-mix(in srgb, #dc2626 10%, var(--color-background-primary));
   color: #b91c1c;
 }
 
 .gm-dash-modal-btn--danger:hover:not(:disabled) {
-  background: rgba(254, 226, 226, 0.98);
+  background: color-mix(in srgb, #dc2626 14%, var(--color-background-primary));
   border-color: rgba(185, 28, 28, 0.45);
   color: #991b1b;
 }
@@ -1662,7 +2178,7 @@ a.gm-dash-btn {
 }
 
 .gm-dash-modal-btn--accent-soft:hover:not(:disabled) {
-  background: rgba(29, 158, 117, 0.14);
+  background: color-mix(in srgb, var(--gm-accent) 22%, transparent);
   border-color: var(--gm-accent);
 }
 
@@ -1771,6 +2287,20 @@ a.gm-dash-btn {
   font-variant-numeric: tabular-nums;
 }
 
+.gm-dash-part-right {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: nowrap;
+}
+
+.gm-dash-part-right--marked {
+  color: var(--color-text-tertiary);
+}
+
 .gm-dash-parts-input {
   height: 34px;
   padding: 0 10px;
@@ -1788,6 +2318,11 @@ a.gm-dash-btn {
   outline: none;
   border-color: var(--gm-accent);
   box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.16);
+}
+
+.gm-dash-parts-input--goal::placeholder {
+  color: var(--gm-accent);
+  opacity: 1;
 }
 
 .gm-dash-parts-num {
@@ -1811,7 +2346,11 @@ a.gm-dash-btn {
   height: 34px;
   border-radius: 12px;
   border: 0.5px solid var(--color-border-secondary);
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 85%,
+    transparent
+  );
   color: var(--color-text-tertiary);
   cursor: pointer;
   font-size: 16px;
@@ -1821,7 +2360,7 @@ a.gm-dash-btn {
 .gm-dash-parts-delete:hover:not(:disabled) {
   border-color: rgba(185, 28, 28, 0.35);
   color: #b91c1c;
-  background: rgba(254, 242, 242, 0.95);
+  background: color-mix(in srgb, #dc2626 12%, var(--color-background-primary));
 }
 
 .gm-dash-parts-delete:disabled {
@@ -1833,7 +2372,11 @@ a.gm-dash-btn {
   height: 36px;
   border-radius: 12px;
   border: 1px dashed var(--color-border-secondary);
-  background: rgba(255, 255, 255, 0.55);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 55%,
+    transparent
+  );
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
@@ -1843,7 +2386,7 @@ a.gm-dash-btn {
 .gm-dash-parts-add:hover {
   border-color: var(--gm-accent);
   color: var(--gm-accent);
-  background: rgba(29, 158, 117, 0.06);
+  background: color-mix(in srgb, var(--gm-accent) 12%, transparent);
 }
 
 .gm-dash-parts-warn {
@@ -1862,7 +2405,11 @@ a.gm-dash-btn {
   height: 38px;
   border-radius: 14px;
   border: 1px dashed var(--color-border-secondary);
-  background: rgba(255, 255, 255, 0.55);
+  background: color-mix(
+    in srgb,
+    var(--color-background-primary) 55%,
+    transparent
+  );
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
@@ -1872,7 +2419,7 @@ a.gm-dash-btn {
 .gm-dash-parts-split:hover {
   border-color: var(--gm-accent);
   color: var(--gm-accent);
-  background: rgba(29, 158, 117, 0.06);
+  background: color-mix(in srgb, var(--gm-accent) 12%, transparent);
 }
 
 @media (max-width: 720px) {

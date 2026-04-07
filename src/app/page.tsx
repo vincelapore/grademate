@@ -223,11 +223,14 @@ export default function Home() {
             </GmButtonLink>
           </div>
           <div className="gm-price-card featured">
-            <div className="gm-price-tier" style={{ color: "#1D9E75" }}>
-              Pro
+            <div className="gm-price-badge">Founding rate — limited time</div>
+            <div className="gm-price-tier">FOUNDING ANNUAL</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$1.58</div>
+              <div className="gm-price-suffix">/mo</div>
             </div>
-            <div className="gm-price-amount">$39</div>
-            <div className="gm-price-cadence">per year · or $4.99/mo</div>
+            <div className="gm-price-secondary">billed once at $19/year</div>
+            <div className="gm-price-save">Save 69% vs monthly</div>
             <ul className="gm-price-features">
               <li>
                 <span className="gm-check">✓</span> Everything in Free
@@ -249,7 +252,76 @@ export default function Home() {
               Get Pro
             </GmButtonLink>
           </div>
+          <div className="gm-price-card">
+            <div className="gm-price-badge subtle">Most popular</div>
+            <div className="gm-price-tier">ANNUAL</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$3.25</div>
+              <div className="gm-price-suffix">/mo</div>
+            </div>
+            <div className="gm-price-secondary">billed once at $39/year</div>
+            <div className="gm-price-save">Save 35% vs monthly</div>
+            <ul className="gm-price-features">
+              <li>
+                <span className="gm-check">✓</span> Everything in Free
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Unlimited semesters
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Degree progress tracking
+              </li>
+              <li>
+                <span className="gm-check">✓</span> GPA history
+              </li>
+              <li>
+                <span className="gm-check">✓</span> What-if scenarios
+              </li>
+            </ul>
+            <GmButtonLink className="gm-price-btn" href="/auth/login">
+              Get Pro
+            </GmButtonLink>
+          </div>
+          <div className="gm-price-card">
+            <div className="gm-price-tier">MONTHLY</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$4.99</div>
+              <div className="gm-price-suffix">/mo</div>
+            </div>
+            <div className="gm-price-secondary">billed monthly, cancel anytime</div>
+            <ul className="gm-price-features">
+              <li>
+                <span className="gm-check">✓</span> Everything in Free
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Unlimited semesters
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Degree progress tracking
+              </li>
+              <li>
+                <span className="gm-check">✓</span> GPA history
+              </li>
+              <li>
+                <span className="gm-check">✓</span> What-if scenarios
+              </li>
+            </ul>
+            <GmButtonLink className="gm-price-btn" href="/auth/login">
+              Get Pro
+            </GmButtonLink>
+          </div>
         </div>
+      </div>
+
+      <div className="gm-landing-disclaimer">
+        <p>
+          Not affiliated with UQ. All data is scraped from UQ course profiles.
+          Please verify information on the official UQ website. This tool is for
+          convenience only and may contain errors. UQ Grades is not responsible
+          for your grades, missed hurdles and deadlines, or that Netflix binge
+          two days before the final.
+        </p>
+        <p>Report bugs, compliments, or feature ideas.</p>
       </div>
     </GmShell>
   );

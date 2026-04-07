@@ -19,6 +19,9 @@ type AssessmentRow = {
   weighting: number;
   mark: string | null;
   due_date: string | null;
+  sub_assessments?: {
+    rows: { name: string; mark: string | null; weight?: number }[];
+  } | null;
   is_hurdle?: boolean | null;
   hurdle_threshold?: number | null;
   hurdle_requirements?: string | null;
@@ -94,15 +97,13 @@ export function DashboardGradeSummaryLive({
         weighting: a.weighting,
         mark: a.mark,
         due_date: a.due_date,
+        sub_assessments: a.sub_assessments ?? null,
       })),
     );
     return computeSemesterCurrentAndOverall(courseAssessments);
   }, [local]);
 
-  const gpa = useMemo(
-    () => computeSemesterGpaFromEnrolments(local),
-    [local],
-  );
+  const gpa = useMemo(() => computeSemesterGpaFromEnrolments(local), [local]);
 
   const dueThisWeek = useMemo(
     () => countAssessmentsDueThisWeek(local),
@@ -157,4 +158,3 @@ export function DashboardGradeSummaryLive({
     </>
   );
 }
-

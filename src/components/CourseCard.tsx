@@ -94,7 +94,7 @@ function markTierForDot(
 }
 
 const DOT_COLORS = {
-  emptyStroke: "rgba(15, 23, 42, 0.22)",
+  emptyStroke: "var(--gm-assess-dot-empty-stroke, rgba(15, 23, 42, 0.22))",
   red: "#e11d48",
   yellow: "#ca8a04",
   green: "var(--gm-accent, #1d9e75)",
@@ -128,7 +128,9 @@ function AssessmentStatusDot({
           ? DOT_COLORS.yellow
           : "#1d9e75";
   const stroke =
-    tier === "empty" ? DOT_COLORS.emptyStroke : "rgba(15, 23, 42, 0.06)";
+    tier === "empty"
+      ? DOT_COLORS.emptyStroke
+      : "var(--gm-assess-dot-filled-stroke, rgba(15, 23, 42, 0.06))";
   const sw = tier === "empty" ? 1.35 : 0.85;
   const clipId = React.useId();
 
@@ -480,29 +482,66 @@ export function CourseCard({
   }
 
   const computed = React.useMemo(() => {
-    const marks = assessments.map((a) => {
-      const raw =
-        draft[a.id] !== undefined ? draft[a.id]! : formatMark(a);
+    const trimmedOrNull = (v: string | null | undefined): string | null => {
+      const s = v == null ? "" : String(v).trim();
+      return s ? s : null;
+    };
+
+    // Flatten assessments into grade-calculation items:
+    // - If an assessment has parts, we ignore the parent mark entirely and emit one item per part.
+    // - If not, we emit the parent assessment as a single item (draft overrides stored).
+    const assessmentToFlatIndices: number[][] = [];
+    const weightedItems: Array<{ weight: number; mark: string | null }> = [];
+
+    assessments.forEach((a, assessmentIndex) => {
+      const partRows = a.sub_assessments?.rows;
+      const hasParts = (partRows?.length ?? 0) > 1;
+      if (hasParts) {
+        const rows = partRows!;
+        const rawWeights = rows.map((r) =>
+          typeof (r as { weight?: number }).weight === "number" &&
+          Number.isFinite((r as { weight?: number }).weight) &&
+          (r as { weight?: number }).weight! > 0
+            ? (r as { weight?: number }).weight!
+            : 0,
+        );
+        const wSum = rawWeights.reduce((s, w) => s + w, 0);
+        const denom = wSum > 0 ? wSum : rows.length;
+
+        const flatIndices: number[] = [];
+        rows.forEach((r, rowIdx) => {
+          const share =
+            denom > 0
+              ? (wSum > 0 ? rawWeights[rowIdx]! / denom : 1 / denom)
+              : 0;
+          weightedItems.push({
+            weight: a.weighting * share,
+            mark: trimmedOrNull(r.mark),
+          });
+          flatIndices.push(weightedItems.length - 1);
+        });
+        assessmentToFlatIndices[assessmentIndex] = flatIndices;
+        return;
+      }
+
+      const raw = draft[a.id] !== undefined ? draft[a.id]! : formatMark(a);
       const t = raw.trim();
-      if (t === "") return null;
-      if (!isValidMarkInput(raw)) return null;
-      return t;
+      const mark =
+        t === "" || !isValidMarkInput(raw) ? null : trimmedOrNull(t);
+      weightedItems.push({ weight: a.weighting, mark });
+      assessmentToFlatIndices[assessmentIndex] = [weightedItems.length - 1];
     });
-    const weightedItems = assessments.map((a, i) => ({
-      weight: a.weighting,
-      mark: marks[i] ?? null,
-    }));
 
     const goalTarget =
       GRADE_THRESHOLDS[(targetGrade as 1 | 2 | 3 | 4 | 5 | 6 | 7) ?? 7];
     const total = calculateWeightedTotal(weightedItems);
 
-    const fillerMarks = calculateEqualDistributionMarks(
+    const fillerMarksFlat = calculateEqualDistributionMarks(
       weightedItems,
       goalTarget,
     );
 
-    const lastIndex = assessments.length > 0 ? assessments.length - 1 : -1;
+    const lastIndex = weightedItems.length > 0 ? weightedItems.length - 1 : -1;
 
     const neededOnFinal =
       lastIndex >= 0
@@ -513,37 +552,78 @@ export function CourseCard({
           )
         : null;
 
-    const hasEnteredMarks = marks.some((m) => {
-      const p = parseMarkToPercentage(m);
-      return p != null && !Number.isNaN(p);
-    });
+    const hasEnteredMarks =
+      weightedItems.some((it) => {
+        const p = parseMarkToPercentage(it.mark);
+        return p != null && Number.isFinite(p) && !Number.isNaN(p);
+      });
 
     let maxPossibleTotal = 0;
-    assessments.forEach((a, i) => {
-      const w = a.weighting;
-      const p = parseMarkToPercentage(marks[i]);
-      if (p != null && !Number.isNaN(p)) {
+    const maxAchievablePerItem: Array<number | null> = [];
+    weightedItems.forEach((it, i) => {
+      const w = typeof it.weight === "number" ? it.weight : 0;
+      const p = parseMarkToPercentage(it.mark);
+      if (p != null && Number.isFinite(p) && !Number.isNaN(p)) {
+        maxAchievablePerItem[i] = p;
         maxPossibleTotal += (p * w) / 100;
-      } else {
-        maxPossibleTotal += w;
+        return;
       }
+      // Blank/invalid: optimistic 100% at this item's proportional weight.
+      maxAchievablePerItem[i] = 100;
+      maxPossibleTotal += w;
     });
 
+    const blockedByAssessmentCapForTarget = fillerMarksFlat.some((req, i) => {
+      if (req == null || !Number.isFinite(req)) return false;
+      const cap = maxAchievablePerItem[i];
+      if (cap == null || !Number.isFinite(cap)) return false;
+      return req > cap + 1e-9;
+    });
+
+    const bestPossibleGrade = (() => {
+      // Find highest grade whose required per-assessment marks fit within caps.
+      for (let g = targetGrade; g >= 1; g--) {
+        const thr = GRADE_THRESHOLDS[g as 1 | 2 | 3 | 4 | 5 | 6 | 7];
+        const reqs = calculateEqualDistributionMarks(weightedItems, thr);
+        const blocked = reqs.some((req, i) => {
+          if (req == null || !Number.isFinite(req)) return false;
+          const cap = maxAchievablePerItem[i];
+          if (cap == null || !Number.isFinite(cap)) return false;
+          return req > cap + 1e-9;
+        });
+        if (!blocked) return g as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+      }
+      return 1 as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    })();
+
     const isGoalAchievable =
-      !hasEnteredMarks || maxPossibleTotal >= goalTarget;
+      !hasEnteredMarks ||
+      (!blockedByAssessmentCapForTarget && maxPossibleTotal >= goalTarget);
     const highestAchievableGrade = percentToGradeBand(maxPossibleTotal);
     const requiresPerfectScore =
       hasEnteredMarks && neededOnFinal != null && neededOnFinal >= 100;
 
+    // Convert flat filler marks back to assessment-indexed filler marks for the table UI.
+    const fillerMarks = assessments.map((_, idx) => {
+      const flatIdxs = assessmentToFlatIndices[idx] ?? [];
+      for (const fi of flatIdxs) {
+        const v = fillerMarksFlat[fi];
+        if (v != null && Number.isFinite(v)) {
+          return Math.min(100, Math.ceil((Math.max(0, v) - 1e-9) * 10) / 10);
+        }
+      }
+      return null;
+    });
+
     return {
-      marks,
       weightedItems,
       goalTarget,
       total,
       fillerMarks,
       neededOnFinal,
       isGoalAchievable,
-      highestAchievableGrade,
+      highestAchievableGrade:
+        isGoalAchievable ? highestAchievableGrade : bestPossibleGrade,
       requiresPerfectScore,
       hasEnteredMarks,
     };
@@ -1029,7 +1109,7 @@ export function CourseCard({
                         e.stopPropagation();
                         setMarkHelpOpen(true);
                       }}
-                      className="gm-dash-icon-btn !h-7 !w-7"
+                      className="gm-dash-icon-btn"
                       aria-label="How to enter marks"
                     >
                       <svg
@@ -1071,8 +1151,17 @@ export function CourseCard({
                   : null;
 
               const markHint = (() => {
+                if (!computed.isGoalAchievable) return null;
                 if (slashDenom != null) {
-                  const requiredPct = computed.fillerMarks[i];
+                  const requiredPctRaw = computed.fillerMarks[i];
+                  const requiredPct =
+                    requiredPctRaw == null || !Number.isFinite(requiredPctRaw)
+                      ? null
+                      : Math.min(
+                          100,
+                          Math.ceil((Math.max(0, requiredPctRaw) - 1e-9) * 10) /
+                            10,
+                        );
                   if (requiredPct == null) {
                     return (
                       <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
@@ -1105,9 +1194,15 @@ export function CourseCard({
                 if (!stored && fill != null) {
                   const { percentage } = formatMarkDisplay(fill);
                   if (percentage == null) return null;
+                  // Use a conservative display so entering the hint reaches the band
+                  // (grade thresholds do not round up).
+                  const display = Math.min(
+                    100,
+                    Math.ceil((percentage - 1e-9) * 10) / 10,
+                  );
                   return (
                     <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
-                      ~{percentage.toFixed(0)}%
+                      ~{display.toFixed(0)}%
                     </span>
                   );
                 }
@@ -1122,7 +1217,7 @@ export function CourseCard({
                     setExpandedAssessmentId((cur) => (cur === a.id ? null : a.id));
                   }}
                 >
-                  <td>
+                  <td data-label="Assessment">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <div className="gm-dash-assess-name">{a.assessment_name}</div>
@@ -1161,13 +1256,13 @@ export function CourseCard({
                       ) : null}
                     </div>
                   </td>
-                  <td className="gm-dash-td-num gm-dash-td-muted">
+                  <td data-label="Weight" className="gm-dash-td-num gm-dash-td-muted">
                     {a.weighting}%
                   </td>
-                  <td className="gm-dash-td-num gm-dash-td-muted">
+                  <td data-label="Due" className="gm-dash-td-num gm-dash-td-muted">
                     {formatDueDateForDisplay(a.due_date)}
                   </td>
-                  <td className="gm-dash-td-num">
+                  <td data-label="Mark" className="gm-dash-td-num">
                     <div className="gm-dash-mark-cell">
                       {(a.sub_assessments?.rows?.length ?? 0) > 1
                         ? (() => {
@@ -1191,9 +1286,6 @@ export function CourseCard({
                             });
                             const anyEntered = entered.some((e) => e.pct != null);
                             const allComplete = entered.every((e) => e.pct != null);
-
-                            // If no component marks are filled yet, keep it empty.
-                            if (!anyEntered) return null;
 
                             const wSumAll = weights.reduce((s, w) => s + (w > 0 ? w : 0), 0);
                             const wSumEntered = entered.reduce((s, e, i2) => {
@@ -1242,6 +1334,42 @@ export function CourseCard({
                                 ? `${Math.round(displayPct)}%`
                                 : null;
 
+                            const requiredAssessmentPct =
+                              typeof fill === "number" && Number.isFinite(fill)
+                                ? Math.max(0, Math.min(100, fill))
+                                : null;
+
+                            const enteredWeighted = entered.reduce((s, e, i2) => {
+                              if (e.pct == null) return s;
+                              const w = weights[i2] ?? 0;
+                              const ww = wSumAll > 0 ? (w > 0 ? w : 0) : 1;
+                              return s + e.pct * ww;
+                            }, 0);
+                            const totalWeight =
+                              wSumAll > 0 ? wSumAll : entered.length;
+                            const enteredWeight =
+                              wSumAll > 0
+                                ? wSumEntered
+                                : entered.filter((e) => e.pct != null).length;
+                            const remainingWeight = Math.max(
+                              0,
+                              totalWeight - enteredWeight,
+                            );
+
+                            const maxAchievablePct =
+                              totalWeight > 0
+                                ? Math.max(
+                                    0,
+                                    Math.min(
+                                      100,
+                                      (enteredWeighted + remainingWeight * 100) /
+                                        totalWeight,
+                                    ),
+                                  )
+                                : null;
+
+                            // requiredAssessmentPct is the required overall % for this assessment (from course goal).
+
                             const dots =
                               rows.length > 1 ? (
                                 <div className="mt-1 flex justify-end gap-1">
@@ -1257,11 +1385,27 @@ export function CourseCard({
                               ) : null;
 
                             if (!allComplete) {
-                              // In progress: "current grade" (earned / available so far) in green.
+                              // In progress: show current-from-entered in black + required/max in green.
+                              const currentLabel = anyEntered ? pctLabel : "0%";
+                              const reqLabel =
+                                !computed.isGoalAchievable
+                                  ? null
+                                  : requiredAssessmentPct == null
+                                    ? null
+                                    : requiredAssessmentPct <= 100
+                                      ? `~${Math.round(requiredAssessmentPct)}%`
+                                      : maxAchievablePct != null
+                                        ? `max ${Math.round(maxAchievablePct)}%`
+                                        : null;
                               return (
                                 <div className="flex flex-col items-end">
-                                  <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
-                                    {pctLabel ?? "—"}
+                                  <span className="font-semibold text-[var(--color-text-primary)]">
+                                    {currentLabel ?? "—"}
+                                    {reqLabel ? (
+                                      <span className="ml-2 gm-dash-mark-pct gm-dash-mark-pct--accent">
+                                        {reqLabel}
+                                      </span>
+                                    ) : null}
                                   </span>
                                   {dots}
                                 </div>
@@ -1297,6 +1441,10 @@ export function CourseCard({
                           <>
                             <input
                               type="text"
+                              inputMode="text"
+                              enterKeyHint="done"
+                              autoCapitalize="off"
+                              autoCorrect="off"
                               placeholder={
                                 fillerPlaceholder && fill != null
                                   ? String(Math.round(fill))
@@ -1346,14 +1494,7 @@ export function CourseCard({
                   <tr>
                     <td colSpan={4} onClick={(e) => e.stopPropagation()}>
                       {(() => {
-                        const goalTarget = GRADE_THRESHOLDS[targetGrade as 4 | 5 | 6 | 7];
-                        const wi = assessments.map((it) => ({
-                          weight: it.weighting,
-                          mark:
-                            draft[it.id] !== undefined ? draft[it.id]! : formatMark(it),
-                        }));
-                        const filler = calculateEqualDistributionMarks(wi, goalTarget);
-                        const goalMarkPercent = filler[i] ?? null;
+                        const goalMarkPercent = computed.fillerMarks[i] ?? null;
                         const assessmentCourseWeight =
                           typeof a.weighting === "number" ? Math.round(a.weighting) : 0;
                         const rows: SubAssessmentRow[] = ensureSubAssessmentRows(
@@ -1370,7 +1511,8 @@ export function CourseCard({
                           <div className="px-3 pb-4 pt-2">
                             <AssessmentCalculatorInline
                               assessmentName={a.assessment_name}
-                              goalMarkPercent={goalMarkPercent}
+                              requiredMark={goalMarkPercent}
+                              hideGoal={!computed.isGoalAchievable}
                               assessmentCourseWeightPercent={assessmentCourseWeight}
                               rows={rows}
                               onRowsChange={(next) => void applySubAssessmentRows(a.id, next)}

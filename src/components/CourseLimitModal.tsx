@@ -21,7 +21,7 @@ export function CourseLimitModal({ onClose }: { onClose: () => void }) {
         className="gm-card"
         style={{
           width: "100%",
-          maxWidth: 520,
+          maxWidth: 720,
           background: "var(--color-background-primary)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -53,58 +53,43 @@ export function CourseLimitModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        <div style={{ display: "grid", gap: 10 }}>
-          <div
-            style={{
-              border: "0.5px solid var(--color-border-tertiary)",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "var(--color-background-secondary)",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 500 }}>Monthly</div>
-              <div
-                style={{
-                  fontFamily: "var(--font-gm-mono)",
-                  fontSize: 13,
-                  color: "var(--color-text-tertiary)",
-                }}
-              >
-                $4.99 / month
-              </div>
+        <div className="gm-price-grid" style={{ marginTop: 6 }}>
+          <div className="gm-price-card featured" style={{ background: "var(--color-background-secondary)" }}>
+            <div className="gm-price-badge">Founding rate — limited time</div>
+            <div className="gm-price-tier">FOUNDING ANNUAL</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$1.58</div>
+              <div className="gm-price-suffix">/mo</div>
             </div>
-            <button type="button" className="gm-btn-primary" disabled>
+            <div className="gm-price-secondary">billed once at $19/year</div>
+            <div className="gm-price-save">Save 69% vs monthly</div>
+            <button type="button" className="gm-btn-primary" disabled style={{ width: "100%" }}>
               Coming soon
             </button>
           </div>
-          <div
-            style={{
-              border: "0.5px solid var(--color-border-tertiary)",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "var(--color-background-secondary)",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 500 }}>Yearly</div>
-              <div
-                style={{
-                  fontFamily: "var(--font-gm-mono)",
-                  fontSize: 13,
-                  color: "var(--color-text-tertiary)",
-                }}
-              >
-                $39 / year
-              </div>
+
+          <div className="gm-price-card" style={{ background: "var(--color-background-secondary)" }}>
+            <div className="gm-price-badge subtle">Most popular</div>
+            <div className="gm-price-tier">ANNUAL</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$3.25</div>
+              <div className="gm-price-suffix">/mo</div>
             </div>
-            <button type="button" className="gm-btn-primary" disabled>
+            <div className="gm-price-secondary">billed once at $39/year</div>
+            <div className="gm-price-save">Save 35% vs monthly</div>
+            <button type="button" className="gm-btn-primary" disabled style={{ width: "100%" }}>
+              Coming soon
+            </button>
+          </div>
+
+          <div className="gm-price-card" style={{ background: "var(--color-background-secondary)" }}>
+            <div className="gm-price-tier">MONTHLY</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">$4.99</div>
+              <div className="gm-price-suffix">/mo</div>
+            </div>
+            <div className="gm-price-secondary">billed monthly, cancel anytime</div>
+            <button type="button" className="gm-btn-primary" disabled style={{ width: "100%" }}>
               Coming soon
             </button>
           </div>

@@ -1,69 +1,49 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { DashboardSignOutButton } from "@/components/DashboardSignOutButton";
 import { GmLogo } from "@/components/gm/GmLogo";
-import { UpgradeModal } from "@/components/UpgradeModal";
-import type { SemesterType } from "@/lib/semester";
-import { AddCourseModal } from "@/components/AddCourseModal";
 import { DashboardCalendarSubscribe } from "@/components/DashboardCalendarSubscribe";
 
 export function DashboardHeader({
-  addCourse,
-  proGate,
+  activeView,
   calendarSubscribe,
 }: {
-  addCourse?: {
-    semesterId: string;
-    year: number;
-    semesterLabel: SemesterType;
-    existingCourseCount: number;
-  };
-  proGate?: {
-    plan: "free" | "pro";
-    semesterCount: number;
-  };
+  activeView: "semester" | "overall";
   calendarSubscribe?: {
     feedUrl: string;
     plan: "free" | "pro";
   } | null;
 }) {
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const [showAddCourse, setShowAddCourse] = useState(false);
-  const router = useRouter();
-
   return (
     <>
       <header className="gm-dash-header-bar">
         <div className="gm-dash-header-left">
           <GmLogo href="/dashboard" />
-          {addCourse ? (
-            <button
-              type="button"
-              className="gm-dash-btn"
-              onClick={() => {
-                setShowAddCourse(true);
-                router.prefetch("/dashboard");
-              }}
-            >
-              Add course
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="gm-dash-btn"
-            onClick={() => {
-              if (proGate?.plan !== "pro" && (proGate?.semesterCount ?? 1) >= 1) {
-                setShowUpgrade(true);
-                return;
+          <nav className="gm-dash-tabs" aria-label="Dashboard views">
+            <Link
+              href="/dashboard"
+              className={
+                activeView === "semester"
+                  ? "gm-dash-tab gm-dash-tab--active"
+                  : "gm-dash-tab"
               }
-              setShowUpgrade(true);
-            }}
-          >
-            Add semester
-          </button>
+              aria-current={activeView === "semester" ? "page" : undefined}
+            >
+              Current
+            </Link>
+            <Link
+              href="/dashboard?view=overall"
+              className={
+                activeView === "overall"
+                  ? "gm-dash-tab gm-dash-tab--active"
+                  : "gm-dash-tab"
+              }
+              aria-current={activeView === "overall" ? "page" : undefined}
+            >
+              Overall
+            </Link>
+          </nav>
         </div>
 
         <div className="gm-dash-header-right">
@@ -79,20 +59,6 @@ export function DashboardHeader({
           <DashboardSignOutButton className="gm-dash-btn" />
         </div>
       </header>
-
-      {showUpgrade ? (
-        <UpgradeModal onClose={() => setShowUpgrade(false)} />
-      ) : null}
-
-      {showAddCourse && addCourse ? (
-        <AddCourseModal
-          semesterId={addCourse.semesterId}
-          year={addCourse.year}
-          semesterLabel={addCourse.semesterLabel}
-          existingCourseCount={addCourse.existingCourseCount}
-          onClose={() => setShowAddCourse(false)}
-        />
-      ) : null}
     </>
   );
 }
