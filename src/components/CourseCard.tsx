@@ -58,6 +58,15 @@ function emitMarkChange(detail: {
   window.dispatchEvent(new CustomEvent("gm:mark-change", { detail }));
 }
 
+function emitPartsChange(detail: {
+  enrolmentId: string;
+  assessmentId: string;
+  sub_assessments: { rows: SubAssessmentRow[] } | null;
+}) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("gm:parts-change", { detail }));
+}
+
 /** YYYY-MM-DD → sort key; missing/invalid dates sort last. */
 function dueDateSortKey(due: string | null): number {
   if (due == null || !String(due).trim()) return Number.POSITIVE_INFINITY;
@@ -795,6 +804,11 @@ export function CourseCard({
           : a,
       ),
     );
+    emitPartsChange({
+      enrolmentId: enrolment.id,
+      assessmentId,
+      sub_assessments: rows == null ? null : { rows },
+    });
   }
 
   async function applySubAssessmentRows(

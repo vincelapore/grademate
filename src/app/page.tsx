@@ -190,7 +190,7 @@ export default function Home() {
 
       <hr className="gm-divider" />
 
-      <div className="gm-pricing" id="pricing">
+      {/* <div className="gm-pricing" id="pricing">
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <div className="gm-feat-label" style={{ textAlign: "center" }}>
             Pricing
@@ -312,6 +312,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      */}
 
       <div className="gm-landing-disclaimer">
         <p>

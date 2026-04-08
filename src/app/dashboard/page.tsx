@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSiteBaseUrl } from "@/lib/siteBaseUrl";
 import { DashboardGradeSummaryLive } from "@/components/DashboardGradeSummaryLive";
-import { CourseCard } from "@/components/CourseCard";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { DashboardSemesterTitleRow } from "@/components/DashboardSemesterTitleRow";
 import { DashboardSemesterColumnHeader } from "@/components/DashboardSemesterColumnHeader";
 import { DashboardOverallCourseRow } from "@/components/DashboardOverallCourseRow";
+import { DashboardCourseTabs } from "@/components/DashboardCourseTabs";
 import type { SemesterType } from "@/lib/semester";
 import { uqSemesterIsoRange } from "@/lib/uqSemesterCalendar";
 import {
@@ -263,10 +263,29 @@ export default async function DashboardPage({
             )}
           />
 
-          <div className="gm-dash-course-list" style={{ marginTop: 8 }}>
-            {(enrolmentsBySemesterId.get(semester.id) ?? []).map((e) => (
-              <CourseCard key={e.id} enrolment={e} />
-            ))}
+          <div style={{ marginTop: 8 }}>
+            <DashboardCourseTabs
+              enrolments={(enrolmentsBySemesterId.get(semester.id) ?? []).map(
+                (e) => ({
+                  id: e.id,
+                  course_code: e.course_code,
+                  course_name: e.course_name,
+                  credit_points: e.credit_points,
+                  target_grade: e.target_grade,
+                  profile_url: e.profile_url,
+                  university: e.university,
+                  hurdle_information: e.hurdle_information,
+                  assessment_results: (e.assessment_results ?? []).map((a) => ({
+                    id: a.id,
+                    assessment_name: a.assessment_name,
+                    weighting: a.weighting,
+                    mark: a.mark,
+                    due_date: a.due_date,
+                    sub_assessments: a.sub_assessments,
+                  })),
+                }),
+              )}
+            />
           </div>
         </>
       )}

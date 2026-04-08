@@ -17,9 +17,9 @@ export function GmNav({
             <a className="gm-nav-link" href="#how-it-works">
               How it works
             </a>
-            <a className="gm-nav-link" href="#pricing">
+            {/* <a className="gm-nav-link" href="#pricing">
               Pricing
-            </a>
+            </a> */}
             <Link className="gm-nav-cta" href="/auth/login">
               Get started free
             </Link>

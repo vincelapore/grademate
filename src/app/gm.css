@@ -1140,7 +1140,7 @@ a.gm-dash-btn {
 
 .gm-dash-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-top: 1.25rem;
   margin-bottom: 1.5rem;
@@ -1177,10 +1177,221 @@ a.gm-dash-btn {
   color: var(--gm-accent);
 }
 
+.gm-dash-stat-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.gm-dash-stat-sub strong {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.gm-dash-stat-sub-dot {
+  color: var(--color-text-tertiary);
+}
+
 .gm-dash-course-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.gm-dash-course-tabs {
+  display: block;
+}
+
+.gm-dash-course-tabs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .gm-dash-course-tabs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .gm-dash-course-tabs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gm-dash-course-tab-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.gm-dash-course-tab-card:focus-visible {
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.1),
+    0 4px 12px rgba(15, 23, 42, 0.05),
+    0 0 0 3px rgba(29, 158, 117, 0.22);
+  border-color: rgba(29, 158, 117, 0.55);
+}
+
+.gm-dash-course-tab-card--active {
+  border-color: rgba(29, 158, 117, 0.55);
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.1),
+    0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gm-dash-course-tab-card:hover {
+    box-shadow:
+      0 12px 32px rgba(15, 23, 42, 0.1),
+      0 4px 12px rgba(15, 23, 42, 0.05);
+    border-color: var(--color-border-secondary);
+  }
+  .gm-dash-course-tab-card--active:hover {
+    border-color: rgba(29, 158, 117, 0.6);
+  }
+}
+
+.gm-dash-course-tab-top {
+  min-width: 0;
+}
+
+.gm-dash-course-tab-code {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.gm-dash-course-tab-name {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gm-dash-course-tab-assess {
+  margin-top: 12px;
+}
+
+.gm-dash-course-tab-empty {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.gm-dash-course-tab-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  position: absolute;
+  top: 0;
+  border: 1.25px solid rgba(15, 23, 42, 0.18);
+  background: transparent;
+  box-sizing: border-box;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.gm-dash-course-tab-dot--circle {
+  border-radius: 999px;
+}
+
+.gm-dash-course-tab-dot--square {
+  border-radius: 2px;
+}
+
+.gm-dash-course-tab-weight-bar-wrap {
+  position: relative;
+  padding-top: 12px;
+}
+
+.gm-dash-course-tab-dot-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  pointer-events: none;
+}
+
+.gm-dash-course-tab-weight-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border-tertiary);
+}
+
+.gm-dash-course-tab-weight-left,
+.gm-dash-course-tab-weight-right {
+  display: flex;
+  height: 100%;
+}
+
+.gm-dash-course-tab-weight-right {
+  margin-left: auto;
+}
+
+.gm-dash-course-tab-weight-seg {
+  position: relative;
+  display: block;
+  height: 100%;
+}
+
+.gm-dash-course-tab-weight-seg + .gm-dash-course-tab-weight-seg {
+  box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.12);
+}
+
+.gm-dash-course-tab-weight-seg--unachievable {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.14) 0px,
+      rgba(15, 23, 42, 0.14) 4px,
+      rgba(255, 255, 255, 0.1) 4px,
+      rgba(255, 255, 255, 0.1) 8px
+    );
+  outline: 1px solid rgba(15, 23, 42, 0.08);
+  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.gm-dash-course-tab-weight-seg--unachievable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gm-unach-tint, rgba(15, 23, 42, 0.5));
+  opacity: 0.18;
+}
+
+.gm-dash-course-tab-weight-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: block;
+  transition: width 0.2s ease;
+}
+
+.gm-dash-course-tabs-panel {
+  margin-top: 12px;
 }
 
 .gm-dash-card {

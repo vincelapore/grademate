@@ -93,8 +93,15 @@ export function AddCourseSearch({
   const [saving, setSaving] = useState(false);
 
   const uiLocked = loadingModes || loadingCourse || saving;
+  const atCourseLimit = initialCourseCount + courses.length >= maxCourses;
 
   async function findModes() {
+    if (atCourseLimit) {
+      setPending(null);
+      setError(null);
+      setShowLimit(true);
+      return;
+    }
     const code = courseInput.trim().toUpperCase();
     if (code.length < 4) {
       setError("Enter a course code (at least 4 characters).");
@@ -265,39 +272,49 @@ export function AddCourseSearch({
   return (
     <div className="gm-dash-add-course">
       {!pending ? (
-        <div className="gm-dash-add-course-find-row">
-          <input
-            value={courseInput}
-            onChange={(e) => setCourseInput(e.target.value.toUpperCase())}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void findModes();
-            }}
-            placeholder="Course code (e.g. CSSE3100)"
-            inputMode="text"
-            autoCapitalize="characters"
-            autoComplete="off"
-            className="gm-dash-input gm-dash-add-course-input"
-            disabled={uiLocked}
-          />
-          <button
-            type="button"
-            className="gm-dash-modal-btn gm-dash-modal-btn--primary gm-dash-add-course-find-btn"
-            disabled={uiLocked}
-            onClick={() => void findModes()}
+        atCourseLimit ? (
+          <div
+            className="gm-dash-grade-summary--empty"
+            style={{ marginTop: 4, minHeight: 0 }}
+            role="status"
           >
-            {loadingModes ? (
-              <span className="gm-dash-add-course-btn-inner">
-                <span
-                  className="gm-dash-spinner gm-dash-spinner--on-primary"
-                  aria-hidden
-                />
-                Finding…
-              </span>
-            ) : (
-              "Find"
-            )}
-          </button>
-        </div>
+            Course limit reached ({maxCourses}). Remove a course to add another.
+          </div>
+        ) : (
+          <div className="gm-dash-add-course-find-row">
+            <input
+              value={courseInput}
+              onChange={(e) => setCourseInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void findModes();
+              }}
+              placeholder="Course code (e.g. CSSE3100)"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoComplete="off"
+              className="gm-dash-input gm-dash-add-course-input"
+              disabled={uiLocked}
+            />
+            <button
+              type="button"
+              className="gm-dash-modal-btn gm-dash-modal-btn--primary gm-dash-add-course-find-btn"
+              disabled={uiLocked}
+              onClick={() => void findModes()}
+            >
+              {loadingModes ? (
+                <span className="gm-dash-add-course-btn-inner">
+                  <span
+                    className="gm-dash-spinner gm-dash-spinner--on-primary"
+                    aria-hidden
+                  />
+                  Finding…
+                </span>
+              ) : (
+                "Find"
+              )}
+            </button>
+          </div>
+        )
       ) : (
         <div className="gm-dash-add-course-delivery-panel">
           <div className="gm-dash-add-course-pending-meta">

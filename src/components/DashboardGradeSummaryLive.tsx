@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  computeDegreeProgressPercent,
   computeSemesterCurrentAndOverall,
   computeSemesterGpaFromEnrolments,
   countAssessmentsDueThisWeek,
 } from "@/lib/calculations/gpa";
-import { DashboardGradeSummary } from "@/components/DashboardGradeSummary";
+import { parseMarkToPercentage } from "@/lib/grades";
 import HellWeekCalendar, {
   type HellWeekAssessment,
 } from "@/components/HellWeekCalendar";
@@ -110,10 +109,25 @@ export function DashboardGradeSummaryLive({
     [local],
   );
 
-  const degreeProgressPercent = useMemo(
-    () => computeDegreeProgressPercent(local),
-    [local],
-  );
+  const allAssessmentsComplete = useMemo(() => {
+    for (const e of local) {
+      for (const a of e.assessment_results ?? []) {
+        const rows = a.sub_assessments?.rows;
+        const hasParts = (rows?.length ?? 0) > 1;
+        if (hasParts) {
+          const everyPartComplete = rows!.every((r) =>
+            Number.isFinite(parseMarkToPercentage(r.mark)),
+          );
+          if (!everyPartComplete) return false;
+          continue;
+        }
+        if (!Number.isFinite(parseMarkToPercentage(a.mark))) {
+          return false;
+        }
+      }
+    }
+    return local.length > 0;
+  }, [local]);
 
   const hellAssessments: HellWeekAssessment[] = useMemo(() => {
     const out: HellWeekAssessment[] = [];
@@ -135,16 +149,12 @@ export function DashboardGradeSummaryLive({
 
   return (
     <>
-      <DashboardGradeSummary
-        current={summary?.current ?? null}
-        overall={summary?.overall ?? null}
-      />
       <StatsRow
         gpa={gpa}
+        current={summary?.current ?? null}
+        overall={summary?.overall ?? null}
+        allAssessmentsComplete={allAssessmentsComplete}
         dueThisWeek={dueThisWeek}
-        degreeProgressPercent={
-          Number.isFinite(degreeProgressPercent) ? degreeProgressPercent : 0
-        }
         onViewHellWeeks={() => setHellOpen(true)}
       />
       {hellOpen ? (

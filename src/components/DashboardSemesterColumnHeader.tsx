@@ -24,6 +24,7 @@ export function DashboardSemesterColumnHeader({
 }) {
   const router = useRouter();
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const canAddCourse = addCourse.existingCourseCount < 4;
 
   return (
     <>
@@ -44,7 +45,7 @@ export function DashboardSemesterColumnHeader({
             </div>
           ) : null}
         </div>
-        {showAddCourseButton ? (
+        {showAddCourseButton && canAddCourse ? (
           <button
             type="button"
             className="gm-dash-icon-btn"
@@ -59,7 +60,7 @@ export function DashboardSemesterColumnHeader({
         ) : null}
       </div>
 
-      {showAddCourseButton && showAddCourse ? (
+      {showAddCourseButton && canAddCourse && showAddCourse ? (
         <AddCourseModal
           semesterId={addCourse.semesterId}
           year={addCourse.year}

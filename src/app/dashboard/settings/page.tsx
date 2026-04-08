@@ -95,7 +95,7 @@ export default async function DashboardSettingsPage() {
           </div>
         </section>
 
-        <section className="gm-dash-card">
+        {/* <section className="gm-dash-card">
           <h2
             style={{
               margin: 0,
@@ -142,7 +142,7 @@ export default async function DashboardSettingsPage() {
               <DashboardSettingsUpgrade />
             </div>
           ) : null}
-        </section>
+        </section> */}
 
         <section className="gm-dash-card">
           <h2

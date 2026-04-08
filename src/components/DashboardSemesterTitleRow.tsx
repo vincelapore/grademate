@@ -20,26 +20,29 @@ export function DashboardSemesterTitleRow({
 }) {
   const router = useRouter();
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const canAddCourse = addCourse.existingCourseCount < 4;
 
   return (
     <>
       <div className="gm-dash-title-row">
         <h1 className="gm-dash-page-title">{title}</h1>
-        <button
-          type="button"
-          className="gm-dash-btn"
-          aria-label="Add course"
-          onClick={() => {
-            setShowAddCourse(true);
-            router.prefetch("/dashboard");
-          }}
-        >
-          <Plus className="h-5 w-5" strokeWidth={1.75} />
-          <span>Add course</span>
-        </button>
+        {canAddCourse ? (
+          <button
+            type="button"
+            className="gm-dash-btn"
+            aria-label="Add course"
+            onClick={() => {
+              setShowAddCourse(true);
+              router.prefetch("/dashboard");
+            }}
+          >
+            <Plus className="h-5 w-5" strokeWidth={1.75} />
+            <span>Add course</span>
+          </button>
+        ) : null}
       </div>
 
-      {showAddCourse ? (
+      {canAddCourse && showAddCourse ? (
         <AddCourseModal
           semesterId={addCourse.semesterId}
           year={addCourse.year}

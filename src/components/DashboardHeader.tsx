@@ -15,6 +15,14 @@ export function DashboardHeader({
     plan: "free" | "pro";
   } | null;
 }) {
+  const mailto = (() => {
+    const subject = "GradeMate feedback";
+    const body = ["Hello,", " "].join("\n");
+    return `mailto:vincemlapore@gmail.com?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+  })();
+
   return (
     <>
       <header className="gm-dash-header-bar">
@@ -53,6 +61,9 @@ export function DashboardHeader({
               plan={calendarSubscribe.plan}
             />
           ) : null}
+          <a className="gm-dash-btn" href={mailto}>
+            Report bug
+          </a>
           <Link href="/dashboard/settings" className="gm-dash-btn">
             Settings
           </Link>
