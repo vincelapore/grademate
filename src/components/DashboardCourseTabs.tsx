@@ -8,7 +8,7 @@ type AssessmentPreview = {
   assessment_name: string;
   weighting: number;
   mark: string | null;
-  due_date?: string | null;
+  due_date: string | null;
   sub_assessments?: {
     rows: Array<{ name: string; mark: string | null; weight?: number }>;
   } | null;
@@ -39,7 +39,9 @@ function cleanCourseName(courseCode: string, courseName: string): string {
 /** YYYY-MM-DD → sort key; missing/invalid dates sort last. */
 function dueDateSortKey(due: string | null | undefined): number {
   if (due == null || !String(due).trim()) return Number.POSITIVE_INFINITY;
-  const m = String(due).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const m = String(due)
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return Number.POSITIVE_INFINITY;
   const t = Date.parse(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
@@ -64,7 +66,12 @@ function markerTierForPct(pct: number | null): MarkerTier | null {
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace("#", "").trim();
   const full =
-    h.length === 3 ? h.split("").map((c) => c + c).join("") : h.padEnd(6, "0");
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h.padEnd(6, "0");
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
@@ -118,7 +125,7 @@ function assessmentState(a: AssessmentPreview): {
       }
       any = true;
       const share =
-        denomAll > 0 ? ((wSum > 0 ? weights[idx]! : 1) / denomAll) : 0;
+        denomAll > 0 ? (wSum > 0 ? weights[idx]! : 1) / denomAll : 0;
       numer += pct * share;
     });
 
@@ -243,7 +250,13 @@ function CourseTabPreviewBar({
     const totalRequiredForMinGap = dotWidthPct + (n - 1) * minGapPct;
     if (last > maxLeftPct || totalRequiredForMinGap > 100) {
       if (n === 1) {
-        return [clampNumber(Math.min(segmentsWithPos[0]!.startPct, maxLeftPct), 0, maxLeftPct)];
+        return [
+          clampNumber(
+            Math.min(segmentsWithPos[0]!.startPct, maxLeftPct),
+            0,
+            maxLeftPct,
+          ),
+        ];
       }
       const step = Math.max(dotWidthPct, maxLeftPct / (n - 1));
       const even: number[] = [];
@@ -264,49 +277,104 @@ function CourseTabPreviewBar({
       ref={wrapRef}
     >
       <div className="gm-dash-course-tab-dot-layer">
+        {/*
+          Match the original dashboard assessment dot styling (stroke weight, fill behaviour,
+          and half-fill clip) so these feel consistent with the CourseCard UI.
+        */}
         {segmentsWithPos.map((s, idx) => {
           const left = `${dotLefts[idx] ?? 0}%`;
-          const shapeClass = s.isExam
-            ? "gm-dash-course-tab-dot--square"
-            : "gm-dash-course-tab-dot--circle";
-          if (s.mode === "empty" || !s.solidColor) {
-            return (
-              <span
-                key={s.id}
-                className={`gm-dash-course-tab-dot ${shapeClass}`}
-                style={{
-                  left,
-                  borderColor: s.emptyStroke,
-                  background: "transparent",
-                }}
-              />
-            );
-          }
-
-          if (s.mode === "half") {
-            return (
-              <span
-                key={s.id}
-                className={`gm-dash-course-tab-dot ${shapeClass}`}
-                style={{
-                  left,
-                  borderColor: s.solidColor,
-                  background: `linear-gradient(to right, ${s.solidColor} 50%, transparent 50%)`,
-                }}
-              />
-            );
-          }
+          const clipId = `gm-tab-dot-${s.id}`;
+          const fillMode: "empty" | "half" | "full" = s.mode;
+          const fill =
+            fillMode === "empty" || !s.solidColor ? "none" : s.solidColor;
+          const stroke =
+            fillMode === "empty"
+              ? "var(--gm-assess-dot-empty-stroke, rgba(15, 23, 42, 0.22))"
+              : "var(--gm-assess-dot-filled-stroke, rgba(15, 23, 42, 0.06))";
+          const sw = fillMode === "empty" ? 1.35 : 0.85;
 
           return (
             <span
               key={s.id}
-              className={`gm-dash-course-tab-dot ${shapeClass}`}
-              style={{
-                left,
-                borderColor: s.solidColor,
-                background: s.solidColor,
-              }}
-            />
+              className="gm-dash-course-tab-dot"
+              style={{ left }}
+            >
+              <svg
+                width={11}
+                height={11}
+                viewBox="0 0 10 10"
+                aria-hidden
+                className="gm-dash-course-tab-dot-svg"
+              >
+                {fillMode === "half" && fill !== "none" ? (
+                  <defs>
+                    <clipPath id={clipId}>
+                      <rect x="0" y="0" width="5" height="10" />
+                    </clipPath>
+                  </defs>
+                ) : null}
+
+                {s.isExam ? (
+                  <>
+                    <rect
+                      x={1.15}
+                      y={1.15}
+                      width={7.7}
+                      height={7.7}
+                      rx={1}
+                      ry={1}
+                      fill="none"
+                      stroke={stroke}
+                      strokeWidth={sw}
+                    />
+                    {fill === "none" ? null : fillMode === "half" ? (
+                      <rect
+                        x={1.15}
+                        y={1.15}
+                        width={7.7}
+                        height={7.7}
+                        rx={1}
+                        ry={1}
+                        fill={fill}
+                        clipPath={`url(#${clipId})`}
+                      />
+                    ) : (
+                      <rect
+                        x={1.15}
+                        y={1.15}
+                        width={7.7}
+                        height={7.7}
+                        rx={1}
+                        ry={1}
+                        fill={fill}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <circle
+                      cx={5}
+                      cy={5}
+                      r={3.85}
+                      fill="none"
+                      stroke={stroke}
+                      strokeWidth={sw}
+                    />
+                    {fill === "none" ? null : fillMode === "half" ? (
+                      <circle
+                        cx={5}
+                        cy={5}
+                        r={3.85}
+                        fill={fill}
+                        clipPath={`url(#${clipId})`}
+                      />
+                    ) : (
+                      <circle cx={5} cy={5} r={3.85} fill={fill} />
+                    )}
+                  </>
+                )}
+              </svg>
+            </span>
           );
         })}
       </div>
@@ -320,7 +388,7 @@ function CourseTabPreviewBar({
               width: `${Math.max(0, Math.min(100, p.widthPct))}%`,
               background:
                 p.kind === "achieved"
-                  ? p.solidColor ?? "rgba(15, 23, 42, 0.25)"
+                  ? (p.solidColor ?? "rgba(15, 23, 42, 0.25)")
                   : p.fadedColor,
             }}
           />
@@ -340,9 +408,17 @@ function CourseTabPreviewBar({
   );
 }
 
-export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] }) {
-  const [localEnrolments, setLocalEnrolments] = useState<Enrolment[]>(enrolments);
-  const ids = useMemo(() => localEnrolments.map((e) => e.id), [localEnrolments]);
+export function DashboardCourseTabs({
+  enrolments,
+}: {
+  enrolments: Enrolment[];
+}) {
+  const [localEnrolments, setLocalEnrolments] =
+    useState<Enrolment[]>(enrolments);
+  const ids = useMemo(
+    () => localEnrolments.map((e) => e.id),
+    [localEnrolments],
+  );
   const [activeId, setActiveId] = useState<string | null>(() => ids[0] ?? null);
 
   useEffect(() => {
@@ -373,7 +449,13 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
         | {
             enrolmentId: string;
             assessmentId: string;
-            sub_assessments: { rows: Array<{ name: string; mark: string | null; weight?: number }> } | null;
+            sub_assessments: {
+              rows: Array<{
+                name: string;
+                mark: string | null;
+                weight?: number;
+              }>;
+            } | null;
           }
         | undefined;
       if (!detail?.enrolmentId || !detail.assessmentId) return;
@@ -414,7 +496,11 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
 
   return (
     <section className="gm-dash-course-tabs">
-      <div className="gm-dash-course-tabs-grid" role="tablist" aria-label="Courses">
+      <div
+        className="gm-dash-course-tabs-grid"
+        role="tablist"
+        aria-label="Courses"
+      >
         {localEnrolments.map((e) => {
           const isActive = e.id === (active?.id ?? null);
           const name = cleanCourseName(e.course_code, e.course_name);
@@ -434,7 +520,9 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
 
             const tier = markerTierForPct(state.achievedPct);
             const solidColor = tier ? MARKER_TIER_COLORS[tier] : "#0f172a";
-            const fadedColor = tier ? hexToRgba(solidColor, 0.22) : "rgba(15, 23, 42, 0.08)";
+            const fadedColor = tier
+              ? hexToRgba(solidColor, 0.22)
+              : "rgba(15, 23, 42, 0.08)";
             const emptyStroke = "rgba(15, 23, 42, 0.22)";
 
             const achievedPoints = Math.max(
@@ -447,7 +535,7 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
             const unachievablePoints =
               state.status === "complete" ? remaining : 0;
 
-            const mode =
+            const mode: "empty" | "half" | "full" =
               state.status === "complete"
                 ? "full"
                 : state.status === "partial"
@@ -540,7 +628,10 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
                 <div className="gm-dash-course-tab-name">{name}</div>
               </div>
 
-              <div className="gm-dash-course-tab-assess" aria-label="Assessments preview">
+              <div
+                className="gm-dash-course-tab-assess"
+                aria-label="Assessments preview"
+              >
                 {segmentsWithPos.length ? (
                   <>
                     <CourseTabPreviewBar
@@ -568,4 +659,3 @@ export function DashboardCourseTabs({ enrolments }: { enrolments: Enrolment[] })
     </section>
   );
 }
-

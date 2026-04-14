@@ -52,10 +52,12 @@ function isMarkEventDetail(x: unknown): x is MarkEventDetail {
 }
 
 export function DashboardGradeSummaryLive({
+  plan,
   enrolments,
   semesterStart,
   semesterEnd,
 }: {
+  plan: "free" | "pro";
   enrolments: EnrolmentRow[];
   semesterStart: string;
   semesterEnd: string;
@@ -150,12 +152,7 @@ export function DashboardGradeSummaryLive({
   return (
     <>
       <StatsRow
-        gpa={gpa}
         current={summary?.current ?? null}
-        overall={summary?.overall ?? null}
-        allAssessmentsComplete={allAssessmentsComplete}
-        dueThisWeek={dueThisWeek}
-        onViewHellWeeks={() => setHellOpen(true)}
       />
       {hellOpen ? (
         <HellWeekCalendar

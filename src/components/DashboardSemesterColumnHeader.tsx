@@ -5,26 +5,36 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import type { SemesterType } from "@/lib/semester";
 import { AddCourseModal } from "@/components/AddCourseModal";
+import { CourseLimitModal } from "@/components/CourseLimitModal";
 
 export function DashboardSemesterColumnHeader({
   title,
   summary,
   showAddCourseButton = true,
+  plan,
   addCourse,
 }: {
   title: string;
   summary?: { currentLabel: string; overallLabel: string } | null;
   showAddCourseButton?: boolean;
+  plan: "free" | "pro";
   addCourse: {
     semesterId: string;
     year: number;
     semesterLabel: SemesterType;
+    university?: "uq" | "qut";
+    lockedMode?: "freeform" | "scraper" | null;
+    lockedUniversity?: "uq" | "qut" | null;
+    lockedYear?: number | null;
+    lockedSemester?: SemesterType | null;
     existingCourseCount: number;
   };
 }) {
   const router = useRouter();
   const [showAddCourse, setShowAddCourse] = useState(false);
-  const canAddCourse = addCourse.existingCourseCount < 4;
+  const [showCourseLimit, setShowCourseLimit] = useState(false);
+  const atFreeLimit = plan === "free" && addCourse.existingCourseCount >= 4;
+  const canAddCourse = plan === "pro" || addCourse.existingCourseCount < 4;
 
   return (
     <>
@@ -57,17 +67,36 @@ export function DashboardSemesterColumnHeader({
           >
             <Plus className="h-4 w-4" strokeWidth={1.9} />
           </button>
+        ) : showAddCourseButton && atFreeLimit ? (
+          <button
+            type="button"
+            className="gm-dash-icon-btn"
+            aria-label="Upgrade for more courses"
+            title="Upgrade for more courses"
+            onClick={() => setShowCourseLimit(true)}
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.9} />
+          </button>
         ) : null}
       </div>
 
       {showAddCourseButton && canAddCourse && showAddCourse ? (
         <AddCourseModal
+          plan={plan}
           semesterId={addCourse.semesterId}
           year={addCourse.year}
           semesterLabel={addCourse.semesterLabel}
+          university={addCourse.university}
+          lockedMode={addCourse.lockedMode}
+          lockedUniversity={addCourse.lockedUniversity}
+          lockedYear={addCourse.lockedYear}
+          lockedSemester={addCourse.lockedSemester}
           existingCourseCount={addCourse.existingCourseCount}
           onClose={() => setShowAddCourse(false)}
         />
+      ) : null}
+      {showCourseLimit ? (
+        <CourseLimitModal onClose={() => setShowCourseLimit(false)} />
       ) : null}
     </>
   );

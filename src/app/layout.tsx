@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Serif_Display, Inter, Outfit } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({
@@ -53,13 +54,20 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("gm_theme")?.value;
+  const theme =
+    themeCookie === "light" || themeCookie === "dark" || themeCookie === "system"
+      ? themeCookie
+      : null;
+
   return (
-    <html lang="en">
+    <html lang="en" {...(theme ? { "data-theme": theme } : {})}>
       <body
         className={`${inter.variable} ${gmOutfit.variable} ${gmSerif.variable} ${gmMono.variable} font-sans antialiased`}
       >

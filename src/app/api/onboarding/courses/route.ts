@@ -38,9 +38,16 @@ type CoursePayload = {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = (await supabase.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("authorization") ?? "";
+    const token = authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice("bearer ".length).trim()
+      : "";
+    if (token) {
+      user = (await supabase.auth.getUser(token)).data.user;
+    }
+  }
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -55,6 +62,26 @@ export async function POST(request: Request) {
     typeof bodyUnknown === "object" && bodyUnknown != null && "courses" in bodyUnknown
       ? ((bodyUnknown as { courses: unknown }).courses as unknown)
       : null;
+  const context =
+    typeof bodyUnknown === "object" && bodyUnknown != null && "context" in bodyUnknown
+      ? ((bodyUnknown as { context: unknown }).context as unknown)
+      : null;
+  const contextYear =
+    typeof context === "object" && context != null && "year" in context
+      ? Number((context as { year: unknown }).year)
+      : null;
+  const contextSemester =
+    typeof context === "object" && context != null && "semester" in context
+      ? Number((context as { semester: unknown }).semester)
+      : null;
+  const contextUniversity =
+    typeof context === "object" && context != null && "university" in context
+      ? String((context as { university: unknown }).university)
+      : "";
+  const contextMode =
+    typeof context === "object" && context != null && "mode" in context
+      ? String((context as { mode: unknown }).mode)
+      : "";
 
   if (!semesterId) {
     return NextResponse.json({ error: "Missing semesterId" }, { status: 400 });
@@ -64,14 +91,59 @@ export async function POST(request: Request) {
   }
 
   // Basic ownership check: semester must belong to authed user.
-  const { data: sem, error: semErr } = await supabase
+  // Note: during local development, migrations may not have been applied yet.
+  // We gracefully fall back if the context columns don't exist.
+  let sem:
+    | {
+        id: string;
+        context_mode: string | null;
+        context_university: string | null;
+        context_year: number | null;
+        context_semester: number | null;
+      }
+    | null = null;
+  let semErr: { message?: string } | null = null;
+
+  const semResNew = await supabase
     .from("semesters")
-    .select("id")
+    .select("id, context_mode, context_university, context_year, context_semester")
     .eq("id", semesterId)
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle<{
+      id: string;
+      context_mode: string | null;
+      context_university: string | null;
+      context_year: number | null;
+      context_semester: number | null;
+    }>();
+
+  if (semResNew.error) {
+    const semResOld = await supabase
+      .from("semesters")
+      .select("id")
+      .eq("id", semesterId)
+      .eq("user_id", user.id)
+      .maybeSingle<{ id: string }>();
+    sem = semResOld.data
+      ? {
+          id: semResOld.data.id,
+          context_mode: null,
+          context_university: null,
+          context_year: null,
+          context_semester: null,
+        }
+      : null;
+    // If the fallback query succeeded, ignore the original "missing column" error.
+    semErr = semResOld.error;
+  } else {
+    sem = semResNew.data;
+    semErr = null;
+  }
   if (semErr || !sem) {
-    return NextResponse.json({ error: "Invalid semester" }, { status: 400 });
+    return NextResponse.json(
+      { error: semErr?.message ?? "Invalid semester" },
+      { status: 400 },
+    );
   }
 
   // Enforce course limit for free plan (server-side).
@@ -96,6 +168,114 @@ export async function POST(request: Request) {
         { error: "Upgrade to Pro to track more than 4 courses." },
         { status: 402 },
       );
+    }
+  }
+
+  // If this semester already has a locked context, enforce it matches the request.
+  if (sem.context_mode === "freeform") {
+    if (contextMode && contextMode !== "freeform") {
+      return NextResponse.json(
+        { error: "This semester is locked to freeform courses." },
+        { status: 400 },
+      );
+    }
+  } else if (sem.context_mode === "scraper") {
+    if (contextMode && contextMode !== "scraper") {
+      return NextResponse.json(
+        { error: "This semester is locked to scraped courses." },
+        { status: 400 },
+      );
+    }
+    if (
+      contextYear != null &&
+      Number.isFinite(contextYear) &&
+      sem.context_year != null &&
+      contextYear !== sem.context_year
+    ) {
+      return NextResponse.json(
+        { error: "This semester is locked to a different year." },
+        { status: 400 },
+      );
+    }
+    if (
+      contextSemester != null &&
+      Number.isFinite(contextSemester) &&
+      sem.context_semester != null &&
+      contextSemester !== sem.context_semester
+    ) {
+      return NextResponse.json(
+        { error: "This semester is locked to a different semester." },
+        { status: 400 },
+      );
+    }
+    if (
+      contextUniversity &&
+      sem.context_university != null &&
+      contextUniversity.trim().toLowerCase() !==
+        sem.context_university.trim().toLowerCase()
+    ) {
+      return NextResponse.json(
+        { error: "This semester is locked to a different university." },
+        { status: 400 },
+      );
+    }
+  }
+
+  // If the semester has no context yet and we're adding the first course, lock it now.
+  if (
+    sem.context_mode == null &&
+    sem.context_university == null &&
+    sem.context_year == null &&
+    sem.context_semester == null
+  ) {
+    const { count } = await supabase
+      .from("subject_enrolments")
+      .select("id", { count: "exact", head: true })
+      .eq("semester_id", semesterId);
+    const existingCount = count ?? 0;
+    if (existingCount === 0) {
+      if (contextMode === "freeform") {
+        const { error: lockErr } = await supabase
+          .from("semesters")
+          .update({ context_mode: "freeform" })
+          .eq("id", semesterId)
+          .eq("user_id", user.id);
+        if (lockErr) {
+          return NextResponse.json({ error: lockErr.message }, { status: 400 });
+        }
+      } else if (contextMode === "scraper") {
+        const yearOk =
+          contextYear != null &&
+          Number.isFinite(contextYear) &&
+          contextYear >= 2000 &&
+          contextYear <= 2100;
+        const semOk =
+          contextSemester != null &&
+          Number.isFinite(contextSemester) &&
+          (contextSemester === 1 || contextSemester === 2);
+        const uni = normalizeUniversityCode(contextUniversity);
+        const uniOk = uni === "uq" || uni === "qut";
+        if (yearOk && semOk && uniOk) {
+          const { error: lockErr } = await supabase
+            .from("semesters")
+            .update({
+              context_mode: "scraper",
+              context_university: uni,
+              context_year: contextYear,
+              context_semester: contextSemester,
+            })
+            .eq("id", semesterId)
+            .eq("user_id", user.id);
+          if (lockErr) {
+            return NextResponse.json({ error: lockErr.message }, { status: 400 });
+          }
+        } else {
+          return NextResponse.json(
+            { error: "Missing or invalid scraper context." },
+            { status: 400 },
+          );
+        }
+      }
     }
   }
 

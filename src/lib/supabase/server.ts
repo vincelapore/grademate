@@ -8,9 +8,11 @@ import { cookies } from 'next/headers'
 export async function createClient() {
   const cookieStore = await cookies()
 
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const pub = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+  // Guardrail: if env is misconfigured with a secret key, fall back to publishable.
   const key =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+    typeof anon === "string" && anon.startsWith("sb_secret_") ? pub : anon ?? pub
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

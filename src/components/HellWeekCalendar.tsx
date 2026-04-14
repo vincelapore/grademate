@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type HellWeekAssessment = {
   id: string;
@@ -126,8 +126,24 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /** Smooth heat → tint; 0 = transparent. Piecewise HSL interpolation between brand stops. */
-function heatToTintColor(heat: number): string {
+function heatToTintColor(heat: number, darkMode: boolean): string {
   if (heat <= 0) return "transparent";
+
+  if (darkMode) {
+    const mk = (hex: string, a: number) => {
+      const { r, g, b } = hexToRgb(hex);
+      return `rgba(${r},${g},${b},${a})`;
+    };
+    const capped = Math.min(heat, 200);
+    if (capped > 0 && capped < 1) {
+      const alpha = 0.10 + capped * 0.22;
+      return mk("#1d9e75", alpha);
+    }
+    if (capped <= 30) return mk("#1d9e75", 0.22);
+    if (capped <= 50) return mk("#ca8a04", 0.24);
+    if (capped <= 70) return mk("#db2777", 0.24);
+    return mk("#e11d48", 0.26);
+  }
 
   if (heat > 0 && heat < 1) {
     const { r, g, b } = hexToRgb("#E1F5EE");
@@ -207,6 +223,16 @@ export default function HellWeekCalendar({
   onClose,
 }: HellWeekCalendarProps) {
   const hasAnyDueDates = assessments.some((a) => a.due_date);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const update = () => setDarkMode(Boolean(mq.matches));
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
 
   const calendarModel = useMemo(() => {
     const weekRows = buildWeekRows(semesterStart, semesterEnd);
@@ -293,9 +319,15 @@ export default function HellWeekCalendar({
   const mono = "var(--font-gm-mono), ui-monospace, monospace";
   const serif = "var(--font-gm-serif), serif";
   const outfit = "var(--font-gm-outfit), var(--font-inter), sans-serif";
-  const ink = "#0b1220";
-  const inkSecondary = "rgba(15, 23, 42, 0.72)";
-  const inkTertiary = "rgba(15, 23, 42, 0.55)";
+  const ink = "var(--color-text-primary)";
+  const inkSecondary = "var(--color-text-secondary)";
+  const inkTertiary = "var(--color-text-tertiary)";
+  const surface = "var(--color-background-primary)";
+  const surface2 = "var(--color-background-secondary)";
+  const border = "0.5px solid var(--color-border-tertiary)";
+  const subtleFill = `color-mix(in srgb, ${ink} 10%, transparent)`;
+  const warn = darkMode ? "#fdba74" : "#b45309";
+  const danger = darkMode ? "#fb7185" : "#9a3412";
 
   const dayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -307,7 +339,7 @@ export default function HellWeekCalendar({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,0.35)",
+        background: darkMode ? "rgba(0,0,0,0.55)" : "rgba(15,23,42,0.35)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -323,8 +355,8 @@ export default function HellWeekCalendar({
           width: "100%",
           maxWidth: 1080,
           maxHeight: "min(92vh, 900px)",
-          background: "#fff",
-          border: "0.5px solid rgba(15, 23, 42, 0.12)",
+          background: surface,
+          border,
           borderRadius: 16,
           display: "flex",
           flexDirection: "column",
@@ -334,7 +366,7 @@ export default function HellWeekCalendar({
         <div
           style={{
             padding: "18px 22px 14px",
-            borderBottom: "0.5px solid rgba(15, 23, 42, 0.12)",
+            borderBottom: border,
             position: "relative",
           }}
         >
@@ -346,9 +378,9 @@ export default function HellWeekCalendar({
               position: "absolute",
               top: 16,
               right: 16,
-              border: "0.5px solid rgba(15, 23, 42, 0.12)",
+              border,
               borderRadius: 8,
-              background: "#fff",
+              background: surface,
               fontFamily: mono,
               fontSize: 12,
               padding: "6px 10px",
@@ -427,14 +459,14 @@ export default function HellWeekCalendar({
                 </div>
                 {calendarModel.weekModels.map((wm) => {
                   const mondayIso = wm.days[0]?.iso ?? "";
-                  const barColor = heatToTintColor(wm.weekHeat);
+                  const barColor = heatToTintColor(wm.weekHeat, darkMode);
                   const weekLabel =
                     wm.weekHeat > 70
                       ? "HELL WEEK"
                       : wm.weekHeat >= 50
                         ? "HEAVY"
                         : null;
-                  const border = "0.5px solid rgba(15, 23, 42, 0.12)";
+                  const border = "0.5px solid var(--color-border-tertiary)";
 
                   return (
                     <div
@@ -455,9 +487,9 @@ export default function HellWeekCalendar({
                           alignSelf: "stretch",
                           background:
                             wm.weekHeat <= 0
-                              ? "rgba(15, 23, 42, 0.12)"
+                              ? subtleFill
                               : barColor === "transparent"
-                                ? "rgba(15, 23, 42, 0.12)"
+                                ? subtleFill
                                 : barColor,
                           borderRight: border,
                         }}
@@ -470,7 +502,7 @@ export default function HellWeekCalendar({
                           textAlign: "center",
                           padding: "4px 6px",
                           borderRight: border,
-                          background: "rgba(255,255,255,0.65)",
+                          background: `color-mix(in srgb, ${surface} 78%, transparent)`,
                         }}
                       >
                         {weekLabel ? (
@@ -480,7 +512,7 @@ export default function HellWeekCalendar({
                               fontSize: 9,
                               letterSpacing: "0.08em",
                               lineHeight: 1.2,
-                              color: wm.weekHeat > 70 ? "#9a3412" : "#b45309",
+                              color: wm.weekHeat > 70 ? danger : warn,
                             }}
                           >
                             {weekLabel}
@@ -490,8 +522,8 @@ export default function HellWeekCalendar({
                       {wm.days.map((cell) => {
                         const isToday = cell.iso === calendarModel.todayIso;
                         const bg = cell.withinSemester
-                          ? heatToTintColor(cell.dayHeat)
-                          : "#fafafa";
+                          ? heatToTintColor(cell.dayHeat, darkMode)
+                          : surface2;
                         return (
                           <div
                             key={cell.iso}
@@ -499,14 +531,13 @@ export default function HellWeekCalendar({
                               minHeight: 72,
                               borderRight: border,
                               borderBottom: border,
-                              background:
-                                bg === "transparent" ? "#fff" : bg,
+                              background: bg === "transparent" ? surface : bg,
                               padding: "4px 5px 6px",
                               display: "flex",
                               flexDirection: "column",
                               gap: 4,
                               boxShadow: isToday
-                                ? "inset 0 0 0 1.5px rgba(15, 23, 42, 0.35)"
+                                ? `inset 0 0 0 1.5px color-mix(in srgb, ${ink} 35%, transparent)`
                                 : undefined,
                             }}
                           >
@@ -516,7 +547,7 @@ export default function HellWeekCalendar({
                                 fontSize: 11,
                                 color: cell.withinSemester
                                   ? inkSecondary
-                                  : "#bbb",
+                                  : "color-mix(in srgb, var(--color-text-tertiary) 75%, transparent)",
                                 textDecoration: isToday
                                   ? "underline"
                                   : undefined,
@@ -539,7 +570,7 @@ export default function HellWeekCalendar({
                                   key={a.id}
                                   title={`${a.assessment_name} — ${a.course_name}`}
                                   style={{
-                                    background: "#fff",
+                                    background: surface,
                                     border: border,
                                     borderRadius: 8,
                                     padding: "3px 6px",
@@ -555,7 +586,7 @@ export default function HellWeekCalendar({
                                     }}
                                   >
                                     {a.course_code}{" "}
-                                    <span style={{ color: "#b45309" }}>
+                                    <span style={{ color: warn }}>
                                       {Math.round(a.weighting)}%
                                     </span>
                                   </div>
@@ -588,7 +619,7 @@ export default function HellWeekCalendar({
                   const mondayIso = wm.days[0]?.iso ?? "";
                   const allItems = wm.days.flatMap((c) => c.items);
                   const weekRangeLabel = `${wm.days[0].date.getDate()} ${wm.days[0].date.toLocaleString("en-AU", { month: "short" })} – ${wm.days[6].date.getDate()} ${wm.days[6].date.toLocaleString("en-AU", { month: "short" })}`;
-                  const weekTint = heatToTintColor(wm.weekHeat);
+                  const weekTint = heatToTintColor(wm.weekHeat, darkMode);
                   const badge =
                     wm.weekHeat > 70
                       ? "HELL WEEK"
@@ -601,12 +632,12 @@ export default function HellWeekCalendar({
                       key={`m-${mondayIso}`}
                       id={`hell-week-m-${mondayIso}`}
                       style={{
-                        border: "0.5px solid rgba(15, 23, 42, 0.12)",
+                        border,
                         borderRadius: 12,
                         marginBottom: 10,
                         overflow: "hidden",
                         background:
-                          weekTint === "transparent" ? "#fff" : weekTint,
+                          weekTint === "transparent" ? surface : weekTint,
                       }}
                     >
                       <div
@@ -617,12 +648,12 @@ export default function HellWeekCalendar({
                           padding: "10px 12px",
                           borderBottom:
                             allItems.length > 0
-                              ? "0.5px solid rgba(15, 23, 42, 0.12)"
+                              ? border
                               : undefined,
                           background:
                             weekTint === "transparent"
-                              ? "#fff"
-                              : "rgba(255,255,255,0.55)",
+                              ? surface
+                              : `color-mix(in srgb, ${surface} 65%, transparent)`,
                         }}
                       >
                         <div
@@ -633,7 +664,7 @@ export default function HellWeekCalendar({
                             borderRadius: 2,
                             background:
                               wm.weekHeat <= 0
-                                ? "rgba(15, 23, 42, 0.12)"
+                                ? subtleFill
                                 : weekTint,
                           }}
                         />
@@ -655,7 +686,7 @@ export default function HellWeekCalendar({
                               fontSize: 9,
                               letterSpacing: "0.05em",
                               color:
-                                wm.weekHeat > 70 ? "#9a3412" : "#b45309",
+                                wm.weekHeat > 70 ? danger : warn,
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -664,22 +695,23 @@ export default function HellWeekCalendar({
                         ) : null}
                       </div>
                       {allItems.length > 0 ? (
-                        <div style={{ padding: 8, background: "#fff" }}>
+                        <div style={{ padding: 8, background: surface }}>
                           {allItems.map((a) => (
                             <div
                               key={a.id}
                               style={{
-                                border: "0.5px solid rgba(15, 23, 42, 0.12)",
+                                border,
                                 borderRadius: 8,
                                 padding: "8px 10px",
                                 marginBottom: 6,
                                 fontSize: 12,
                                 color: ink,
+                                background: `color-mix(in srgb, ${surface2} 72%, transparent)`,
                               }}
                             >
                               <div style={{ fontFamily: mono, fontSize: 11 }}>
                                 {a.course_code}{" "}
-                                <span style={{ color: "#b45309" }}>
+                                <span style={{ color: warn }}>
                                   {Math.round(a.weighting)}%
                                 </span>
                               </div>

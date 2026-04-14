@@ -15,6 +15,12 @@ ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free'
 CHECK (plan IN ('free', 'pro'));
 
+-- Stripe billing (see migration: 20260413120000_add_users_stripe_billing.sql)
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
+
 -- Secret URL token for read-only iCal subscription (/api/calendar/[token].ics)
 ALTER TABLE public.users
 -- NOTE: calendar_token is managed via `supabase/migrations/*` so it can be applied

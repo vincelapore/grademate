@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AssessmentItem, CourseAssessment } from "@/lib/uq-scraper";
 import type { DeliveryModeOption } from "@/lib/delivery-modes";
 import { parseDueDate } from "@/lib/calendar";
 import type { DeliveryMode, SemesterType } from "@/lib/semester";
 import { CourseLimitModal } from "@/components/CourseLimitModal";
+import { createClient as createBrowserSupabase } from "@/lib/supabase/client";
 
 type ScrapeResponse = CourseAssessment | { error: string };
 
@@ -64,6 +65,7 @@ export function AddCourseSearch({
   semesterLabel,
   delivery: _delivery,
   onDone,
+  onContextLocked,
   maxCourses = 4,
   initialCourseCount = 0,
 }: {
@@ -74,6 +76,7 @@ export function AddCourseSearch({
   /** @deprecated Delivery is chosen per course after “Find”. */
   delivery?: DeliveryMode;
   onDone: () => void;
+  onContextLocked?: () => void;
   maxCourses?: number;
   initialCourseCount?: number;
 }) {
@@ -92,8 +95,47 @@ export function AddCourseSearch({
   const [showLimit, setShowLimit] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [bearer, setBearer] = useState<string>("");
+  useEffect(() => {
+    try {
+      const supabase = createBrowserSupabase();
+      supabase.auth
+        .getSession()
+        .then(({ data }) => {
+          const token = data.session?.access_token ?? "";
+          setBearer(token ? `Bearer ${token}` : "");
+        })
+        .catch(() => setBearer(""));
+    } catch {
+      setBearer("");
+    }
+  }, []);
+
   const uiLocked = loadingModes || loadingCourse || saving;
   const atCourseLimit = initialCourseCount + courses.length >= maxCourses;
+
+  async function lockSemesterContextBestEffort() {
+    try {
+      await fetch("/api/onboarding/semester", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(bearer ? { Authorization: bearer } : {}),
+        },
+        body: JSON.stringify({
+          semesterId,
+          context: {
+            mode: "scraper",
+            university,
+            year,
+            semester: semesterLabel === "Semester 2" ? 2 : 1,
+          },
+        }),
+      });
+    } catch {
+      // ignore
+    }
+  }
 
   async function findModes() {
     if (atCourseLimit) {
@@ -230,6 +272,11 @@ export function AddCourseSearch({
           assessments,
         },
       ]);
+      if (courses.length === 0) {
+        // Match /university/uq behavior: lock the context after the first course is chosen.
+        void lockSemesterContextBestEffort();
+        onContextLocked?.();
+      }
       setPending(null);
       setCourseInput("");
     } catch (e) {
@@ -248,8 +295,20 @@ export function AddCourseSearch({
     try {
       const res = await fetch("/api/onboarding/courses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ semesterId, courses }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(bearer ? { Authorization: bearer } : {}),
+        },
+        body: JSON.stringify({
+          semesterId,
+          context: {
+            mode: "scraper",
+            university,
+            year,
+            semester: semesterLabel === "Semester 2" ? 2 : 1,
+          },
+          courses,
+        }),
       });
       const jsonUnknown: unknown = await res.json().catch(() => null);
       if (!res.ok) {
@@ -377,7 +436,7 @@ export function AddCourseSearch({
         </p>
       ) : null}
 
-      {courses.length > 0 ? (
+      {!pending && courses.length > 0 ? (
         <ul className="gm-dash-add-course-queue">
           {courses.map((c) => (
             <li key={c.courseCode} className="gm-dash-add-course-queue-item">

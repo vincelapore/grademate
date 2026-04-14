@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteBaseUrl } from "@/lib/siteBaseUrl";
 import { DashboardGradeSummaryLive } from "@/components/DashboardGradeSummaryLive";
@@ -7,17 +8,33 @@ import { DashboardSemesterColumnHeader } from "@/components/DashboardSemesterCol
 import { DashboardOverallCourseRow } from "@/components/DashboardOverallCourseRow";
 import { DashboardCourseTabs } from "@/components/DashboardCourseTabs";
 import type { SemesterType } from "@/lib/semester";
+import { getSemesterDates } from "@/lib/semester";
 import { uqSemesterIsoRange } from "@/lib/uqSemesterCalendar";
 import {
   computeCourseSummary,
   computeSemesterCurrentAndOverall,
 } from "@/lib/calculations/gpa";
+import Link from "next/link";
+import { AddSemesterButton } from "@/components/AddSemesterButton";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 type DbUser = {
   plan: string | null;
   calendar_token: string | null;
+};
+
+type DbSemester = {
+  id: string;
+  year: number;
+  semester: number;
+  name: string | null;
+  context_mode: string | null;
+  context_university: string | null;
+  context_year: number | null;
+  context_semester: number | null;
+  created_at: string;
 };
 
 function semesterIntToLabel(n: number): SemesterType {
@@ -51,6 +68,26 @@ type DbEnrolment = {
   created_at: string;
   assessment_results: DbAssessment[];
 };
+
+function parseIsoLocalDay(iso: string): Date | null {
+  const m = String(iso)
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function startOfTodayLocal(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function dayDiff(a: Date, b: Date): number {
+  const ms = 24 * 60 * 60 * 1000;
+  return Math.floor((a.getTime() - b.getTime()) / ms);
+}
 
 const SELECT_ENROLMENTS_WITH_SUB =
   "semester_id, id, course_code, course_name, credit_points, target_grade, profile_url, university, hurdle_information, created_at, assessment_results(id, assessment_name, weighting, mark, due_date, sub_assessments, is_hurdle, hurdle_threshold, hurdle_requirements)";
@@ -86,21 +123,61 @@ export default async function DashboardPage({
         }
       : null;
 
-  const { data: semesters } = await supabase
+  // Note: local dev may not have run the latest migrations yet.
+  // If context columns don't exist, fall back to the older select list.
+  let semesters: DbSemester[] | null = null;
+  const semResNew = await supabase
     .from("semesters")
-    .select("id, year, semester, created_at")
+    .select(
+      "id, year, semester, name, context_mode, context_university, context_year, context_semester, created_at",
+    )
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .returns<DbSemester[]>();
+  if (semResNew.error) {
+    const semResOld = await supabase
+      .from("semesters")
+      .select("id, year, semester, name, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .returns<
+        Array<Pick<DbSemester, "id" | "year" | "semester" | "name" | "created_at">>
+      >();
+    semesters =
+      semResOld.data?.map((s) => ({
+        ...s,
+        context_mode: null,
+        context_university: null,
+        context_year: null,
+        context_semester: null,
+      })) ?? null;
+  } else {
+    semesters = semResNew.data ?? null;
+  }
 
   if (!semesters?.length) return null;
 
   const resolvedSearchParams = await Promise.resolve(searchParams);
 
   const viewParam = resolvedSearchParams?.view;
-  const view =
-    (Array.isArray(viewParam) ? viewParam[0] : viewParam) === "overall"
+  const rawView = Array.isArray(viewParam) ? viewParam[0] : viewParam;
+  const cookieStore = await cookies();
+  const defaultViewCookie = cookieStore.get("gm_default_dashboard_view")?.value;
+  const defaultView: "home" | "semester" =
+    defaultViewCookie === "semester" ? "semester" : "home";
+  const view: "home" | "semester" | "overall" =
+    rawView === "overall"
       ? "overall"
-      : "semester";
+      : rawView === "semester"
+        ? "semester"
+        : defaultView;
+
+  const sidParam = resolvedSearchParams?.sid;
+  const selectedSemesterId = Array.isArray(sidParam) ? sidParam[0] : sidParam;
+
+  if (view === "overall" && plan === "free" && semesters.length > 1) {
+    redirect("/dashboard");
+  }
 
   const semesterIds = semesters.map((s) => s.id);
   const { data: enrolSemesterRows } = await supabase
@@ -112,18 +189,28 @@ export default async function DashboardPage({
     (enrolSemesterRows ?? []).map((r) => r.semester_id),
   );
   const semester =
-    semesters.find((s) => semesterIdsWithEnrol.has(s.id)) ?? semesters[0]!;
+    (selectedSemesterId
+      ? semesters.find((s) => s.id === selectedSemesterId)
+      : null) ??
+    semesters.find((s) => semesterIdsWithEnrol.has(s.id)) ??
+    semesters[0]!;
 
-  const { start: semesterStart, end: semesterEnd } = uqSemesterIsoRange(
-    semester.year,
-    semester.semester,
-  );
+  const ctxYear = semester.context_year ?? semester.year;
+  const ctxSemesterInt = semester.context_semester ?? semester.semester;
+  const ctxSemesterLabel = semesterIntToLabel(ctxSemesterInt);
+  const ctxUni = (semester.context_university ?? "uq").toLowerCase();
+  const computedDates =
+    getSemesterDates(
+      { year: ctxYear, semester: ctxSemesterLabel, delivery: "Internal" },
+      ctxUni,
+    ) ?? uqSemesterIsoRange(ctxYear, ctxSemesterInt);
+  const { start: semesterStart, end: semesterEnd } = computedDates;
 
   let enrolments: DbEnrolment[] = [];
   const withSub = await supabase
     .from("subject_enrolments")
     .select(SELECT_ENROLMENTS_WITH_SUB)
-    .in("semester_id", view === "overall" ? semesterIds : [semester.id])
+    .in("semester_id", view === "semester" ? [semester.id] : semesterIds)
     .order("created_at", { ascending: true })
     .returns<DbEnrolment[]>();
 
@@ -131,7 +218,7 @@ export default async function DashboardPage({
     const noSub = await supabase
       .from("subject_enrolments")
       .select(SELECT_ENROLMENTS_NO_SUB)
-      .in("semester_id", view === "overall" ? semesterIds : [semester.id])
+      .in("semester_id", view === "semester" ? [semester.id] : semesterIds)
       .order("created_at", { ascending: true });
     enrolments = (noSub.data ?? []).map((e) => ({
       ...e,
@@ -154,10 +241,79 @@ export default async function DashboardPage({
   }
 
   return (
-    <main className="gm-container gm-dash-page" style={{ paddingTop: 20 }}>
-      <DashboardHeader activeView={view} calendarSubscribe={calendarSubscribe} />
+    <main className="gm-container gm-dash-page" style={{ paddingTop: 14 }}>
+      <DashboardHeader
+        activeView={view}
+        calendarSubscribe={calendarSubscribe}
+        plan={plan}
+        overallLocked={plan === "free" && semesters.length > 1}
+      />
 
-      {view === "overall" ? (
+      {view === "home" ? (
+        <div className="gm-dash-home">
+          <h2 className="gm-dash-home-h2">Semesters</h2>
+          <section className="gm-dash-home-section">
+            <div className="gm-dash-home-sem-list">
+              {semesters.map((s) => {
+                const sEnrol = enrolmentsBySemesterId.get(s.id) ?? [];
+                const semSummary = computeSemesterCurrentAndOverall(
+                  sEnrol.map((e) =>
+                    (e.assessment_results ?? []).map((a) => ({
+                      weighting: a.weighting,
+                      mark: a.mark,
+                      due_date: a.due_date,
+                    })),
+                  ),
+                );
+                const currentLabel =
+                  semSummary?.current != null
+                    ? `${semSummary.current.avg.toFixed(1)}%`
+                    : "—";
+                const overallLabel =
+                  semSummary?.overall != null
+                    ? `${semSummary.overall.avg.toFixed(1)}%`
+                    : "—";
+
+                return (
+                  <Link
+                    key={s.id}
+                    className="gm-dash-card gm-dash-home-sem-card"
+                    href={`/dashboard?view=semester&sid=${encodeURIComponent(s.id)}`}
+                  >
+                    <div className="gm-dash-home-sem-top">
+                      <div className="gm-dash-home-sem-title">
+                        {s.name?.trim()
+                          ? s.name.trim()
+                          : `Semester ${s.semester}, ${s.year}`}
+                      </div>
+                      <div className="gm-dash-home-sem-meta">
+                        {sEnrol.length} course{sEnrol.length === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="gm-dash-home-sem-stats">
+                      <div className="gm-dash-home-sem-stat">
+                        <span className="gm-dash-home-sem-key">Current</span>
+                        <span className="gm-dash-home-sem-val">
+                          {currentLabel}
+                        </span>
+                      </div>
+                      <div className="gm-dash-home-sem-stat">
+                        <span className="gm-dash-home-sem-key">Overall</span>
+                        <span className="gm-dash-home-sem-val">
+                          {overallLabel}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <AddSemesterButton className="gm-dash-components-add" plan={plan} />
+            </div>
+          </section>
+        </div>
+      ) : view === "overall" ? (
         <div className="gm-dash-overall-board" style={{ marginTop: 6 }}>
           {semesters.map((s, idx) => {
             const sEnrol = enrolmentsBySemesterId.get(s.id) ?? [];
@@ -190,10 +346,32 @@ export default async function DashboardPage({
                     title={`Semester ${s.semester}, ${s.year}`}
                     summary={summaryLabels}
                     showAddCourseButton={false}
+                    plan={plan}
                     addCourse={{
                       semesterId: s.id,
-                      year: s.year,
-                      semesterLabel: semesterIntToLabel(s.semester),
+                      year: s.context_year ?? s.year,
+                      semesterLabel: semesterIntToLabel(
+                        s.context_semester ?? s.semester,
+                      ),
+                      university:
+                        (s.context_university ?? "uq") === "qut" ? "qut" : "uq",
+                      lockedMode:
+                        s.context_mode === "freeform"
+                          ? "freeform"
+                          : s.context_mode === "scraper"
+                            ? "scraper"
+                            : null,
+                      lockedUniversity:
+                        s.context_university === "qut"
+                          ? "qut"
+                          : s.context_university === "uq"
+                            ? "uq"
+                            : null,
+                      lockedYear: s.context_year ?? null,
+                      lockedSemester:
+                        s.context_semester != null
+                          ? semesterIntToLabel(s.context_semester)
+                          : null,
                       existingCourseCount: sEnrol.length,
                     }}
                   />
@@ -213,8 +391,12 @@ export default async function DashboardPage({
                           key={e.id}
                           courseCode={e.course_code}
                           courseName={e.course_name}
-                          currentAvgPercent={courseSummary.completedAveragePercent}
-                          overallPercentSoFar={courseSummary.overallPercentSoFar}
+                          currentAvgPercent={
+                            courseSummary.completedAveragePercent
+                          }
+                          overallPercentSoFar={
+                            courseSummary.overallPercentSoFar
+                          }
                           targetGrade={e.target_grade}
                         />
                       );
@@ -228,17 +410,42 @@ export default async function DashboardPage({
       ) : (
         <>
           <DashboardSemesterTitleRow
-            title={`Semester ${semester.semester}, ${semester.year}`}
+            title={
+              semester.name?.trim()
+                ? semester.name.trim()
+                : `Semester ${semester.semester}, ${semester.year}`
+            }
+            plan={plan}
             addCourse={{
               semesterId: semester.id,
-              year: semester.year,
-              semesterLabel: semesterIntToLabel(semester.semester),
-              existingCourseCount: (enrolmentsBySemesterId.get(semester.id) ?? [])
-                .length,
+              year: ctxYear,
+              semesterLabel: ctxSemesterLabel,
+              university: ctxUni === "qut" ? "qut" : "uq",
+              lockedMode:
+                semester.context_mode === "freeform"
+                  ? "freeform"
+                  : semester.context_mode === "scraper"
+                    ? "scraper"
+                    : null,
+              lockedUniversity:
+                semester.context_university === "qut"
+                  ? "qut"
+                  : semester.context_university === "uq"
+                    ? "uq"
+                    : null,
+              lockedYear: semester.context_year ?? null,
+              lockedSemester:
+                semester.context_semester != null
+                  ? semesterIntToLabel(semester.context_semester)
+                  : null,
+              existingCourseCount: (
+                enrolmentsBySemesterId.get(semester.id) ?? []
+              ).length,
             }}
           />
 
           <DashboardGradeSummaryLive
+            plan={plan}
             semesterStart={semesterStart}
             semesterEnd={semesterEnd}
             enrolments={(enrolmentsBySemesterId.get(semester.id) ?? []).map(
@@ -280,7 +487,7 @@ export default async function DashboardPage({
                     assessment_name: a.assessment_name,
                     weighting: a.weighting,
                     mark: a.mark,
-                    due_date: a.due_date,
+                    due_date: a.due_date ?? null,
                     sub_assessments: a.sub_assessments,
                   })),
                 }),
