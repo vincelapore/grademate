@@ -19,6 +19,8 @@
     "lucide-react": "^1.6.0",
     "lz-string": "^1.5.0",
     "next": "16.1.6",
+    "posthog-js": "^1.368.2",
+    "posthog-node": "^5.29.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stripe": "^17.7.0"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import posthog from "posthog-js";
 
 function setCookie(name: string, value: string, days = 365) {
   const maxAge = Math.floor(days * 24 * 60 * 60);
@@ -197,6 +198,7 @@ export function DashboardManageBillingButton({
             : `Could not open billing (${res.status})`,
         );
       }
+      posthog.capture("billing_portal_opened");
       window.location.href = json.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open billing.");
@@ -237,7 +239,11 @@ export function DashboardExportGradesRow() {
           Download a CSV of your semesters, courses, and assessments.
         </div>
       </div>
-      <a className="gm-dash-btn" href="/api/dashboard/export/grades">
+      <a
+        className="gm-dash-btn"
+        href="/api/dashboard/export/grades"
+        onClick={() => posthog.capture("grades_exported")}
+      >
         Download
       </a>
     </div>

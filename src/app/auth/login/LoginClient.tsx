@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GmShell } from "@/components/gm/GmShell";
+import posthog from "posthog-js";
 
 function LoginContent() {
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +16,7 @@ function LoginContent() {
   async function handleGoogleSignIn() {
     setError(null);
     setLoading(true);
+    posthog.capture("login_started", { provider: "google" });
 
     const next = searchParams.get("next") ?? "/dashboard";
     const origin = window.location.origin;

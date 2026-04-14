@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -152,6 +153,23 @@ export async function POST(request: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription") {
           await setUserProFromCheckoutSession(session);
+          const userId =
+            session.metadata?.supabase_user_id ?? session.client_reference_id;
+          if (userId) {
+            const posthog = getPostHogClient();
+            if (posthog) {
+              posthog.capture({
+                distinctId: userId,
+                event: "subscription_activated",
+                properties: {
+                  stripe_session_id: session.id,
+                  amount_total: session.amount_total,
+                  currency: session.currency,
+                },
+              });
+              await posthog.shutdown();
+            }
+          }
         }
         break;
       }
@@ -163,6 +181,21 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         await clearPlanForSubscription(sub);
+        const metaUserId = sub.metadata?.supabase_user_id;
+        if (metaUserId) {
+          const posthog = getPostHogClient();
+          if (posthog) {
+            posthog.capture({
+              distinctId: metaUserId,
+              event: "subscription_cancelled",
+              properties: {
+                stripe_subscription_id: sub.id,
+                cancel_at_period_end: sub.cancel_at_period_end,
+              },
+            });
+            await posthog.shutdown();
+          }
+        }
         break;
       }
       default:

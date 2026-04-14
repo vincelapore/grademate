@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import type { ProPriceTier } from "@/lib/stripePriceIds";
+import posthog from "posthog-js";
 
 export function ProCheckoutButton({
   tier,
@@ -63,6 +64,7 @@ export function ProCheckoutButton({
         setError(message);
         return;
       }
+      posthog.capture("checkout_started", { tier });
       window.location.href = url;
     } catch {
       setError("Network error. Try again.");

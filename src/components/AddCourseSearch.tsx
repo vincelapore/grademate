@@ -7,6 +7,7 @@ import { parseDueDate } from "@/lib/calendar";
 import type { DeliveryMode, SemesterType } from "@/lib/semester";
 import { CourseLimitModal } from "@/components/CourseLimitModal";
 import { createClient as createBrowserSupabase } from "@/lib/supabase/client";
+import posthog from "posthog-js";
 
 type ScrapeResponse = CourseAssessment | { error: string };
 
@@ -175,6 +176,13 @@ export function AddCourseSearch({
       if (modes.length === 0) {
         throw new Error("No delivery modes available.");
       }
+      posthog.capture("course_searched", {
+        course_code: code,
+        university,
+        year,
+        semester: semesterLabel,
+        modes_found: modes.length,
+      });
       setPending({ courseCode: code, modes });
     } catch (e) {
       setPending(null);
@@ -255,6 +263,13 @@ export function AddCourseSearch({
         })
         .filter(Boolean) as PendingCourse["assessments"];
 
+      posthog.capture("course_added", {
+        course_code: courseCode,
+        course_name: courseName,
+        university,
+        delivery: mode.delivery,
+        assessment_count: assessments.length,
+      });
       setCourses((prev) => [
         ...prev,
         {
@@ -320,6 +335,11 @@ export function AddCourseSearch({
             : "Could not save courses.";
         throw new Error(msg);
       }
+      posthog.capture("courses_saved", {
+        university,
+        course_count: courses.length,
+        course_codes: courses.map((c) => c.courseCode),
+      });
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save courses.");

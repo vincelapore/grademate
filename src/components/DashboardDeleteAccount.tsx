@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 
 export function DashboardDeleteAccount() {
   const [open, setOpen] = useState(false);
@@ -26,6 +27,8 @@ export function DashboardDeleteAccount() {
             : `Could not delete account (${res.status})`,
         );
       }
+      posthog.capture("account_deleted");
+      posthog.reset();
       setOpen(false);
       router.refresh();
       window.location.href = "/";

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SemesterSelection } from "@/lib/semester";
 import { AddCourseSearch } from "@/components/AddCourseSearch";
+import posthog from "posthog-js";
 
 type Step = 1 | 2 | 3;
 
@@ -40,6 +41,7 @@ export function OnboardingFlow({
       setError(msg);
       return;
     }
+    posthog.capture("onboarding_university_selected", { university: value });
     setStep(2);
   }
 
@@ -74,11 +76,16 @@ export function OnboardingFlow({
       return;
     }
 
+    posthog.capture("onboarding_semester_confirmed", {
+      year: initialSemester.year,
+      semester: initialSemester.semester,
+    });
     setSemesterId(id);
     setStep(3);
   }
 
   async function finish() {
+    posthog.capture("onboarding_completed");
     router.push("/dashboard");
     router.refresh();
   }
