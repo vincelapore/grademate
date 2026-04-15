@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, startTransition } from "react";
 import posthog from "posthog-js";
 
 function setCookie(name: string, value: string, days = 365) {
@@ -94,9 +94,11 @@ export function DashboardAcademicProfileSettings() {
   useEffect(() => {
     try {
       const u = window.localStorage.getItem("gm_default_university");
-      if (u === "uq" || u === "qut") setUniversity(u);
       const d = window.localStorage.getItem("gm_degree_name");
-      if (typeof d === "string") setDegreeName(d);
+      startTransition(() => {
+        if (u === "uq" || u === "qut") setUniversity(u);
+        if (typeof d === "string") setDegreeName(d);
+      });
     } catch {
       // ignore
     }
@@ -173,8 +175,14 @@ export function DashboardAcademicProfileSettings() {
 
 export function DashboardManageBillingButton({
   disabled,
+  helper,
+  title = "Manage subscription",
+  buttonLabel = "Open billing portal",
 }: {
   disabled?: boolean;
+  helper?: string;
+  title?: string;
+  buttonLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,8 +218,11 @@ export function DashboardManageBillingButton({
   return (
     <div className="gm-settings-row">
       <div className="gm-settings-row-left">
-        <div className="gm-settings-row-title">Manage billing</div>
-        <div className="gm-settings-row-sub">Open Stripe’s customer portal.</div>
+        <div className="gm-settings-row-title">{title}</div>
+        <div className="gm-settings-row-sub">
+          {helper ??
+            "Payment method, invoices, and cancellation are handled in Stripe’s customer portal."}
+        </div>
         {error ? (
           <div className="gm-settings-row-error" role="alert">
             {error}
@@ -224,7 +235,7 @@ export function DashboardManageBillingButton({
         disabled={disabled || busy}
         onClick={() => void openPortal()}
       >
-        {busy ? "Opening…" : "Open"}
+        {busy ? "Opening…" : buttonLabel}
       </button>
     </div>
   );

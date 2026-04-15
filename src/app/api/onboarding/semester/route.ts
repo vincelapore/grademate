@@ -93,10 +93,20 @@ export async function POST(request: Request) {
   const plan = userRow?.plan === "pro" ? "pro" : "free";
 
   if (plan !== "pro") {
-    return NextResponse.json(
-      { error: "Upgrade to Pro to add semesters." },
-      { status: 402 },
-    );
+    // Free plan may create the first semester for onboarding.
+    const { count, error: cntErr } = await supabase
+      .from("semesters")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    if (cntErr) {
+      return NextResponse.json({ error: cntErr.message }, { status: 400 });
+    }
+    if ((count ?? 0) > 0) {
+      return NextResponse.json(
+        { error: "Upgrade to Pro to add more than 1 semester." },
+        { status: 402 },
+      );
+    }
   }
 
   const { data, error } = await supabase

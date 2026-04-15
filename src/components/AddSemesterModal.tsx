@@ -133,6 +133,7 @@ export function AddSemesterModal({ onClose }: { onClose: () => void }) {
       </div>
       {showUpgrade ? (
         <UpgradeModal
+          reason="semesters"
           onClose={() => {
             setShowUpgrade(false);
             onClose();

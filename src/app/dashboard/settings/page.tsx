@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { syncProFromStripeCheckoutSession } from "@/lib/stripe/syncCheckoutSession";
 import { DashboardSettingsUpgrade } from "@/components/DashboardSettingsUpgrade";
 import { DashboardCalendarReset } from "@/components/DashboardCalendarReset";
 import { GmLogo } from "@/components/gm/GmLogo";
@@ -21,6 +23,7 @@ export const dynamic = "force-dynamic";
 type DbUser = {
   plan: string | null;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 };
 
 export default async function DashboardSettingsPage({
@@ -36,9 +39,30 @@ export default async function DashboardSettingsPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const resolvedSearch = await Promise.resolve(searchParams);
+  const checkoutRaw = resolvedSearch?.checkout;
+  const checkoutStatusEarly = Array.isArray(checkoutRaw)
+    ? checkoutRaw[0]
+    : checkoutRaw;
+  const sessionIdRaw = resolvedSearch?.session_id;
+  const sessionIdEarly = Array.isArray(sessionIdRaw)
+    ? sessionIdRaw[0]
+    : sessionIdRaw;
+
+  if (
+    checkoutStatusEarly === "success" &&
+    typeof sessionIdEarly === "string" &&
+    sessionIdEarly.startsWith("cs_")
+  ) {
+    const sync = await syncProFromStripeCheckoutSession(user.id, sessionIdEarly);
+    if (sync.ok) {
+      redirect("/dashboard/settings");
+    }
+  }
+
   const { data: userRow } = await supabase
     .from("users")
-    .select("plan, stripe_customer_id")
+    .select("plan, stripe_customer_id, stripe_subscription_id")
     .eq("id", user.id)
     .maybeSingle<DbUser>();
 
@@ -46,11 +70,15 @@ export default async function DashboardSettingsPage({
   const hasStripeCustomer =
     typeof userRow?.stripe_customer_id === "string" &&
     userRow.stripe_customer_id.trim().length > 0;
-  const resolvedSearch = await Promise.resolve(searchParams);
-  const checkoutRaw = resolvedSearch?.checkout;
-  const checkoutStatus = Array.isArray(checkoutRaw)
-    ? checkoutRaw[0]
-    : checkoutRaw;
+  const hasStripeSubscription =
+    typeof userRow?.stripe_subscription_id === "string" &&
+    userRow.stripe_subscription_id.trim().startsWith("sub_");
+  const canManageStripeBilling = hasStripeCustomer || hasStripeSubscription;
+  const billingReturnRaw = resolvedSearch?.billing;
+  const billingReturnStatus = Array.isArray(billingReturnRaw)
+    ? billingReturnRaw[0]
+    : billingReturnRaw;
+  const checkoutStatus = checkoutStatusEarly;
   const email =
     user.email ??
     (typeof user.user_metadata?.email === "string"
@@ -129,6 +157,21 @@ export default async function DashboardSettingsPage({
           Checkout was cancelled. You can try again anytime from Upgrade below.
         </p>
       ) : null}
+      {billingReturnStatus === "return" ? (
+        <p
+          className="gm-dash-card"
+          style={{
+            margin: "0 0 16px",
+            padding: "12px 14px",
+            fontSize: 14,
+            color: "var(--color-text-secondary)",
+            borderColor: "color-mix(in srgb, var(--color-text-primary) 12%, transparent)",
+          }}
+        >
+          You’re back from Stripe billing. If a change (like cancellation) is not
+          reflected yet, wait a few seconds and refresh — webhooks can take a moment.
+        </p>
+      ) : null}
 
       <div className="gm-dash-settings-stack">
         <section className="gm-dash-card">
@@ -201,8 +244,7 @@ export default async function DashboardSettingsPage({
               <div className="gm-settings-row-left">
                 <div className="gm-settings-row-title">Status</div>
                 <div className="gm-settings-row-sub">
-                  {plan === "pro" ? "Pro" : "Free"}
-                  {plan === "pro" ? " · Founding" : null}
+                  {plan === "pro" ? "Pro · Annual" : "Free"}
                 </div>
               </div>
             </div>
@@ -210,16 +252,26 @@ export default async function DashboardSettingsPage({
             {plan !== "pro" ? (
               <div className="gm-settings-row">
                 <div className="gm-settings-row-left">
-                  <div className="gm-settings-row-title">Upgrade</div>
+                  <div className="gm-settings-row-title">Upgrade to Pro</div>
                   <div className="gm-settings-row-sub">
+                    One plan: <strong>$29/year</strong> (about <strong>$2.42/mo</strong>).
                     Unlock multiple semesters, overall view, hell weeks, and more than
-                    four courses per semester.
+                    four courses per semester. At checkout you can enter promotion code{" "}
+                    <strong>UQYEEHAW</strong> for the founding rate (
+                    <strong>$19/year</strong>, first 100 redemptions).
                   </div>
                 </div>
                 <DashboardSettingsUpgrade />
               </div>
             ) : (
-              <DashboardManageBillingButton disabled={!hasStripeCustomer} />
+              <DashboardManageBillingButton
+                disabled={!canManageStripeBilling}
+                helper={
+                  canManageStripeBilling
+                    ? "Update your card, download invoices, or cancel your renewal. If you cancel, you keep Pro until the end of the billing period you already paid for."
+                    : "Billing is not linked to this account yet. If you subscribed, try Upgrade once while logged in, or contact support with your receipt."
+                }
+              />
             )}
           </div>
         </section>

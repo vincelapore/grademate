@@ -78,6 +78,28 @@ export function AssessmentCalculatorInline({
     };
   })();
 
+  const clampedRequired =
+    requiredMark != null && Number.isFinite(requiredMark)
+      ? Math.max(0, Math.min(100, requiredMark))
+      : null;
+
+  // If some parts are already entered, the remaining parts may need a different
+  // average mark than the overall required mark.
+  const requiredRemainingAvg =
+    !hideGoal &&
+    clampedRequired != null &&
+    partsMath.remainingWeight > 0 &&
+    Number.isFinite(partsMath.earnedPercent)
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            ((clampedRequired - partsMath.earnedPercent) * partsMath.totalWeight) /
+              partsMath.remainingWeight,
+          ),
+        )
+      : null;
+
   const updateRow = (index: number, patch: Partial<SubAssessmentRow>) => {
     const next = rows.map((r, i) => (i === index ? { ...r, ...patch } : r));
     onRowsChange(next);
@@ -135,16 +157,14 @@ export function AssessmentCalculatorInline({
             const showGoalPlaceholder =
               livePct == null &&
               !hideGoal &&
-              requiredMark != null &&
-              Number.isFinite(requiredMark);
-            const clampedRequired =
-              requiredMark != null && Number.isFinite(requiredMark)
-                ? Math.max(0, Math.min(100, requiredMark))
-                : null;
+              (requiredRemainingAvg != null ||
+                (clampedRequired != null && Number.isFinite(clampedRequired)));
+            const placeholderPct =
+              requiredRemainingAvg != null ? requiredRemainingAvg : clampedRequired;
             const displayRequired =
-              clampedRequired == null
+              placeholderPct == null
                 ? null
-                : Math.min(100, Math.ceil((clampedRequired - 1e-9) * 10) / 10);
+                : Math.min(100, Math.ceil((placeholderPct - 1e-9) * 10) / 10);
             return (
               <div key={i} className="gm-dash-parts-row">
                 <input

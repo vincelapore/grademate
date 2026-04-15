@@ -70,7 +70,9 @@ function emitPartsChange(detail: {
 /** YYYY-MM-DD → sort key; missing/invalid dates sort last. */
 function dueDateSortKey(due: string | null): number {
   if (due == null || !String(due).trim()) return Number.POSITIVE_INFINITY;
-  const m = String(due).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const m = String(due)
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return Number.POSITIVE_INFINITY;
   const t = Date.parse(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
@@ -161,7 +163,14 @@ function AssessmentStatusDot({
 
       {shape === "circle" ? (
         <>
-          <circle cx={c} cy={c} r={r} fill="none" stroke={stroke} strokeWidth={sw} />
+          <circle
+            cx={c}
+            cy={c}
+            r={r}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={sw}
+          />
           {tier === "empty" ? null : fillMode === "half" ? (
             <circle
               cx={c}
@@ -215,10 +224,18 @@ function AssessmentStatusDot({
   );
 
   if (seriesSlot === "left") {
-    return <span className="gm-dash-assess-clip gm-dash-assess-clip--left">{svg}</span>;
+    return (
+      <span className="gm-dash-assess-clip gm-dash-assess-clip--left">
+        {svg}
+      </span>
+    );
   }
   if (seriesSlot === "right") {
-    return <span className="gm-dash-assess-clip gm-dash-assess-clip--right">{svg}</span>;
+    return (
+      <span className="gm-dash-assess-clip gm-dash-assess-clip--right">
+        {svg}
+      </span>
+    );
   }
   return svg;
 }
@@ -401,9 +418,9 @@ export function CourseCard({
     enrolment.target_grade ?? 7,
   );
   const [markHelpOpen, setMarkHelpOpen] = useState(false);
-  const [expandedAssessmentId, setExpandedAssessmentId] = useState<string | null>(
-    null,
-  );
+  const [expandedAssessmentId, setExpandedAssessmentId] = useState<
+    string | null
+  >(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -417,8 +434,7 @@ export function CourseCard({
 
   const assessmentSyncKey = (enrolment.assessment_results ?? [])
     .map(
-      (a) =>
-        `${a.id}-${a.assessment_name}-${a.weighting}-${a.due_date ?? ""}`,
+      (a) => `${a.id}-${a.assessment_name}-${a.weighting}-${a.due_date ?? ""}`,
     )
     .join("|");
 
@@ -521,7 +537,9 @@ export function CourseCard({
         rows.forEach((r, rowIdx) => {
           const share =
             denom > 0
-              ? (wSum > 0 ? rawWeights[rowIdx]! / denom : 1 / denom)
+              ? wSum > 0
+                ? rawWeights[rowIdx]! / denom
+                : 1 / denom
               : 0;
           weightedItems.push({
             weight: a.weighting * share,
@@ -535,8 +553,7 @@ export function CourseCard({
 
       const raw = draft[a.id] !== undefined ? draft[a.id]! : formatMark(a);
       const t = raw.trim();
-      const mark =
-        t === "" || !isValidMarkInput(raw) ? null : trimmedOrNull(t);
+      const mark = t === "" || !isValidMarkInput(raw) ? null : trimmedOrNull(t);
       weightedItems.push({ weight: a.weighting, mark });
       assessmentToFlatIndices[assessmentIndex] = [weightedItems.length - 1];
     });
@@ -554,18 +571,13 @@ export function CourseCard({
 
     const neededOnFinal =
       lastIndex >= 0
-        ? calculateRequiredMarkForTarget(
-            weightedItems,
-            goalTarget,
-            lastIndex,
-          )
+        ? calculateRequiredMarkForTarget(weightedItems, goalTarget, lastIndex)
         : null;
 
-    const hasEnteredMarks =
-      weightedItems.some((it) => {
-        const p = parseMarkToPercentage(it.mark);
-        return p != null && Number.isFinite(p) && !Number.isNaN(p);
-      });
+    const hasEnteredMarks = weightedItems.some((it) => {
+      const p = parseMarkToPercentage(it.mark);
+      return p != null && Number.isFinite(p) && !Number.isNaN(p);
+    });
 
     let maxPossibleTotal = 0;
     const maxAchievablePerItem: Array<number | null> = [];
@@ -631,8 +643,9 @@ export function CourseCard({
       fillerMarks,
       neededOnFinal,
       isGoalAchievable,
-      highestAchievableGrade:
-        isGoalAchievable ? highestAchievableGrade : bestPossibleGrade,
+      highestAchievableGrade: isGoalAchievable
+        ? highestAchievableGrade
+        : bestPossibleGrade,
       requiresPerfectScore,
       hasEnteredMarks,
     };
@@ -676,21 +689,26 @@ export function CourseCard({
           const wSum = partRows!.reduce((s, r) => {
             const sMark = r.mark == null ? "" : String(r.mark).trim();
             const p = sMark ? parseMarkToPercentage(r.mark) : null;
-            const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
+            const w =
+              typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
             return p != null && Number.isFinite(p) ? s + w : s;
           }, 0);
-          const denom = wSum > 0 ? wSum : partRows!.filter((r) => {
-            const sMark = r.mark == null ? "" : String(r.mark).trim();
-            const p = sMark ? parseMarkToPercentage(r.mark) : null;
-            return p != null && Number.isFinite(p);
-          }).length;
+          const denom =
+            wSum > 0
+              ? wSum
+              : partRows!.filter((r) => {
+                  const sMark = r.mark == null ? "" : String(r.mark).trim();
+                  const p = sMark ? parseMarkToPercentage(r.mark) : null;
+                  return p != null && Number.isFinite(p);
+                }).length;
 
           let acc = 0;
           partRows!.forEach((r) => {
             const sMark = r.mark == null ? "" : String(r.mark).trim();
             const p = sMark ? parseMarkToPercentage(r.mark) : null;
             if (p == null || !Number.isFinite(p)) return;
-            const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
+            const w =
+              typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
             const ww = wSum > 0 ? w : 1;
             acc += p * ww;
           });
@@ -702,12 +720,10 @@ export function CourseCard({
 
       if (t !== "" && isValidMarkInput(raw)) {
         const p = parseMarkToPercentage(t.trim());
-        pct =
-          p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
+        pct = p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
       } else if (a.mark != null && String(a.mark).trim() !== "") {
         const p = parseMarkToPercentage(a.mark);
-        pct =
-          p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
+        pct = p != null && !Number.isNaN(p) && Number.isFinite(p) ? p : null;
       }
 
       if (hasParts && allPartsComplete && pct != null) {
@@ -728,11 +744,7 @@ export function CourseCard({
     const mark = trimmed === "" ? null : trimmed;
     const previous = assessments.find((a) => a.id === assessmentId);
     setAssessments((prev) =>
-      prev.map((a) =>
-        a.id === assessmentId
-          ? { ...a, mark }
-          : a,
-      ),
+      prev.map((a) => (a.id === assessmentId ? { ...a, mark } : a)),
     );
     emitMarkChange({ enrolmentId: enrolment.id, assessmentId, mark });
 
@@ -830,7 +842,9 @@ export function CourseCard({
       rows.map((r) => ({
         mark: r.mark,
         weight:
-          typeof r.weight === "number" && !Number.isNaN(r.weight) ? r.weight : 0,
+          typeof r.weight === "number" && !Number.isNaN(r.weight)
+            ? r.weight
+            : 0,
       })),
     );
     const derivedMark = formatAggregateMarkForStorage(agg);
@@ -891,15 +905,16 @@ export function CourseCard({
       return null;
     }
     if (computed.isGoalAchievable) {
-      if (
-        computed.neededOnFinal != null &&
-        !computed.requiresPerfectScore
-      ) {
+      if (computed.neededOnFinal != null && !computed.requiresPerfectScore) {
+        const needed = Math.min(
+          100,
+          Math.ceil((Math.max(0, computed.neededOnFinal) - 1e-9) * 10) / 10,
+        );
         return (
           <span className="text-[var(--color-text-tertiary)]">
             Need{" "}
             <span className="font-semibold text-[var(--gm-accent)]">
-              {computed.neededOnFinal.toFixed(1)}%
+              {Math.ceil(needed - 1e-9)}%
             </span>{" "}
             on final
           </span>
@@ -1078,7 +1093,7 @@ export function CourseCard({
                   <>
                     Need{" "}
                     <span className="font-semibold text-[var(--gm-accent)]">
-                      {computed.neededOnFinal.toFixed(1)}%
+                      {Math.ceil(Math.max(0, computed.neededOnFinal) - 1e-9)}%
                     </span>{" "}
                     on your last weighted assessment
                   </>
@@ -1146,403 +1161,463 @@ export function CourseCard({
               </tr>
             </thead>
             <tbody>
-            {assessments.map((a, i) => {
-              const stored = formatMark(a);
-              const value = draft[a.id] !== undefined ? draft[a.id]! : stored;
-              const invalid = value.trim() !== "" && !isValidMarkInput(value);
-              const fill = computed.fillerMarks[i];
-              const fillerPlaceholder =
-                !stored && value.trim() === "" && fill != null;
+              {assessments.map((a, i) => {
+                const stored = formatMark(a);
+                const value = draft[a.id] !== undefined ? draft[a.id]! : stored;
+                const invalid = value.trim() !== "" && !isValidMarkInput(value);
+                const fill = computed.fillerMarks[i];
+                const fillerPlaceholder =
+                  !stored && value.trim() === "" && fill != null;
 
-              const slashOnly = value.trim().match(/^\/(\d+)$/);
-              const slashDenom = slashOnly
-                ? parseInt(slashOnly[1]!, 10)
-                : null;
-
-              const livePct =
-                value.trim() !== "" && isValidMarkInput(value)
-                  ? parseMarkToPercentage(value.trim())
+                const slashOnly = value.trim().match(/^\/(\d+)$/);
+                const slashDenom = slashOnly
+                  ? parseInt(slashOnly[1]!, 10)
                   : null;
 
-              const markHint = (() => {
-                if (!computed.isGoalAchievable) return null;
-                if (slashDenom != null) {
-                  const requiredPctRaw = computed.fillerMarks[i];
-                  const requiredPct =
-                    requiredPctRaw == null || !Number.isFinite(requiredPctRaw)
-                      ? null
-                      : Math.min(
-                          100,
-                          Math.ceil((Math.max(0, requiredPctRaw) - 1e-9) * 10) /
-                            10,
-                        );
-                  if (requiredPct == null) {
+                const livePct =
+                  value.trim() !== "" && isValidMarkInput(value)
+                    ? parseMarkToPercentage(value.trim())
+                    : null;
+
+                const markHint = (() => {
+                  if (!computed.isGoalAchievable) return null;
+                  if (slashDenom != null) {
+                    const requiredPctRaw = computed.fillerMarks[i];
+                    const requiredPct =
+                      requiredPctRaw == null || !Number.isFinite(requiredPctRaw)
+                        ? null
+                        : Math.min(
+                            100,
+                            Math.ceil(
+                              (Math.max(0, requiredPctRaw) - 1e-9) * 10,
+                            ) / 10,
+                          );
+                    if (requiredPct == null) {
+                      return (
+                        <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
+                          —
+                        </span>
+                      );
+                    }
+                    const nn = Math.min(
+                      slashDenom,
+                      Math.ceil((requiredPct * slashDenom) / 100),
+                    );
+                    const actualPct = (nn / slashDenom) * 100;
+                    const pctStr =
+                      actualPct >= 100
+                        ? "100"
+                        : actualPct <= 0
+                          ? "0"
+                          : actualPct.toFixed(1);
                     return (
                       <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
-                        —
+                        {nn}/{slashDenom} ({pctStr}%)
                       </span>
                     );
                   }
-                  const nn = Math.min(
-                    slashDenom,
-                    Math.ceil((requiredPct * slashDenom) / 100),
-                  );
-                  const actualPct = (nn / slashDenom) * 100;
-                  const pctStr =
-                    actualPct >= 100
-                      ? "100"
-                      : actualPct <= 0
-                        ? "0"
-                        : actualPct.toFixed(1);
-                  return (
-                    <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
-                      {nn}/{slashDenom} ({pctStr}%)
-                    </span>
-                  );
-                }
-                if (livePct != null && !Number.isNaN(livePct)) {
-                  return (
-                    <span className="gm-dash-mark-pct">{livePct.toFixed(0)}%</span>
-                  );
-                }
-                if (!stored && fill != null) {
-                  const { percentage } = formatMarkDisplay(fill);
-                  if (percentage == null) return null;
-                  // Use a conservative display so entering the hint reaches the band
-                  // (grade thresholds do not round up).
-                  const display = Math.min(
-                    100,
-                    Math.ceil((percentage - 1e-9) * 10) / 10,
-                  );
-                  return (
-                    <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
-                      ~{display.toFixed(0)}%
-                    </span>
-                  );
-                }
-                return null;
-              })();
+                  if (livePct != null && !Number.isNaN(livePct)) {
+                    return (
+                      <span className="gm-dash-mark-pct">
+                        {livePct.toFixed(0)}%
+                      </span>
+                    );
+                  }
+                  if (!stored && fill != null) {
+                    const { percentage } = formatMarkDisplay(fill);
+                    if (percentage == null) return null;
+                    const display = Math.min(100, Math.ceil(percentage - 1e-9));
+                    return (
+                      <span className="gm-dash-mark-pct gm-dash-mark-pct--accent">
+                        ~{display}%
+                      </span>
+                    );
+                  }
+                  return null;
+                })();
 
-              const isExpanded = expandedAssessmentId === a.id;
-              return (
-                <React.Fragment key={a.id}>
-                <tr
-                  onClick={() => {
-                    setExpandedAssessmentId((cur) => (cur === a.id ? null : a.id));
-                  }}
-                >
-                  <td data-label="Assessment">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <div className="gm-dash-assess-name">{a.assessment_name}</div>
-                        {(a.is_hurdle ||
-                          (a.hurdle_requirements != null &&
-                            a.hurdle_requirements.trim() !== "") ||
-                          a.hurdle_threshold != null) && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setHurdleOpen({ assessmentId: a.id });
-                            }}
-                            className="inline-flex items-center rounded-md border border-amber-600/30 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700 hover:border-amber-600/45 hover:bg-amber-500/15"
-                            title="Hurdle requirement"
-                          >
-                            Hurdle
-                          </button>
-                        )}
-                      </div>
-                      {(a.sub_assessments?.rows?.length ?? 0) > 1 ? (
-                        <div className="text-[11px] text-[var(--color-text-tertiary)]">
-                          {(() => {
-                            const rows = a.sub_assessments?.rows ?? [];
-                            const completed = rows.reduce((acc, r) => {
-                              const str = r.mark == null ? "" : String(r.mark).trim();
-                              if (!str) return acc;
-                              const p = parseMarkToPercentage(r.mark);
-                              return p != null && Number.isFinite(p) && !Number.isNaN(p)
-                                ? acc + 1
-                                : acc;
-                            }, 0);
-                            return `${completed} out of ${rows.length} complete`;
-                          })()}
+                const isExpanded = expandedAssessmentId === a.id;
+                return (
+                  <React.Fragment key={a.id}>
+                    <tr
+                      onClick={() => {
+                        setExpandedAssessmentId((cur) =>
+                          cur === a.id ? null : a.id,
+                        );
+                      }}
+                    >
+                      <td data-label="Assessment">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <div className="gm-dash-assess-name min-w-0">
+                              {a.assessment_name}
+                            </div>
+                            {(a.is_hurdle ||
+                              (a.hurdle_requirements != null &&
+                                a.hurdle_requirements.trim() !== "") ||
+                              a.hurdle_threshold != null) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setHurdleOpen({ assessmentId: a.id });
+                                }}
+                                className="inline-flex shrink-0 items-center rounded-md border border-amber-600/30 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700 hover:border-amber-600/45 hover:bg-amber-500/15"
+                                title="Hurdle requirement"
+                              >
+                                Hurdle
+                              </button>
+                            )}
+                          </div>
+                          {(a.sub_assessments?.rows?.length ?? 0) > 1 ? (
+                            <div className="text-[11px] text-[var(--color-text-tertiary)]">
+                              {(() => {
+                                const rows = a.sub_assessments?.rows ?? [];
+                                const completed = rows.reduce((acc, r) => {
+                                  const str =
+                                    r.mark == null ? "" : String(r.mark).trim();
+                                  if (!str) return acc;
+                                  const p = parseMarkToPercentage(r.mark);
+                                  return p != null &&
+                                    Number.isFinite(p) &&
+                                    !Number.isNaN(p)
+                                    ? acc + 1
+                                    : acc;
+                                }, 0);
+                                return `${completed} out of ${rows.length} complete`;
+                              })()}
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td data-label="Weight" className="gm-dash-td-num gm-dash-td-muted">
-                    {a.weighting}%
-                  </td>
-                  <td data-label="Due" className="gm-dash-td-num gm-dash-td-muted">
-                    {formatDueDateForDisplay(a.due_date)}
-                  </td>
-                  <td data-label="Mark" className="gm-dash-td-num">
-                    <div className="gm-dash-mark-cell">
-                      {(a.sub_assessments?.rows?.length ?? 0) > 1
-                        ? (() => {
-                            const rows = a.sub_assessments!.rows!;
-                            const weights = rows.map((r) =>
-                              typeof (r as { weight?: number }).weight === "number"
-                                ? (r as { weight?: number }).weight!
-                                : 0,
-                            );
+                      </td>
+                      <td
+                        data-label="Weight"
+                        className="gm-dash-td-num gm-dash-td-muted"
+                      >
+                        {a.weighting}%
+                      </td>
+                      <td
+                        data-label="Due"
+                        className="gm-dash-td-num gm-dash-td-muted"
+                      >
+                        {formatDueDateForDisplay(a.due_date)}
+                      </td>
+                      <td data-label="Mark" className="gm-dash-td-num">
+                        <div className="gm-dash-mark-cell">
+                          {(a.sub_assessments?.rows?.length ?? 0) > 1 ? (
+                            (() => {
+                              const rows = a.sub_assessments!.rows!;
+                              const weights = rows.map((r) =>
+                                typeof (r as { weight?: number }).weight ===
+                                "number"
+                                  ? (r as { weight?: number }).weight!
+                                  : 0,
+                              );
 
-                            const entered = rows.map((r) => {
-                              const str = r.mark == null ? "" : String(r.mark).trim();
-                              const pct = str ? parseMarkToPercentage(r.mark) : null;
-                              return {
-                                raw: str,
-                                pct:
-                                  pct != null && Number.isFinite(pct) && !Number.isNaN(pct)
-                                    ? pct
-                                    : null,
-                              };
-                            });
-                            const anyEntered = entered.some((e) => e.pct != null);
-                            const allComplete = entered.every((e) => e.pct != null);
+                              const entered = rows.map((r) => {
+                                const str =
+                                  r.mark == null ? "" : String(r.mark).trim();
+                                const pct = str
+                                  ? parseMarkToPercentage(r.mark)
+                                  : null;
+                                return {
+                                  raw: str,
+                                  pct:
+                                    pct != null &&
+                                    Number.isFinite(pct) &&
+                                    !Number.isNaN(pct)
+                                      ? pct
+                                      : null,
+                                };
+                              });
+                              const anyEntered = entered.some(
+                                (e) => e.pct != null,
+                              );
+                              const allComplete = entered.every(
+                                (e) => e.pct != null,
+                              );
 
-                            const wSumAll = weights.reduce((s, w) => s + (w > 0 ? w : 0), 0);
-                            const wSumEntered = entered.reduce((s, e, i2) => {
-                              if (e.pct == null) return s;
-                              const w = weights[i2] ?? 0;
-                              return s + (w > 0 ? w : 0);
-                            }, 0);
+                              const wSumAll = weights.reduce(
+                                (s, w) => s + (w > 0 ? w : 0),
+                                0,
+                              );
+                              const wSumEntered = entered.reduce((s, e, i2) => {
+                                if (e.pct == null) return s;
+                                const w = weights[i2] ?? 0;
+                                return s + (w > 0 ? w : 0);
+                              }, 0);
 
-                            const denom =
-                              wSumAll > 0 ? wSumEntered : entered.filter((e) => e.pct != null).length;
-                            const numer = entered.reduce((s, e, i2) => {
-                              if (e.pct == null) return s;
-                              const w = weights[i2] ?? 0;
-                              const ww = wSumAll > 0 ? (w > 0 ? w : 0) : 1;
-                              return s + e.pct * ww;
-                            }, 0);
-                            const pctNow =
-                              denom > 0 ? Math.max(0, Math.min(100, numer / denom)) : null;
+                              const denom =
+                                wSumAll > 0
+                                  ? wSumEntered
+                                  : entered.filter((e) => e.pct != null).length;
+                              const numer = entered.reduce((s, e, i2) => {
+                                if (e.pct == null) return s;
+                                const w = weights[i2] ?? 0;
+                                const ww = wSumAll > 0 ? (w > 0 ? w : 0) : 1;
+                                return s + e.pct * ww;
+                              }, 0);
+                              const pctNow =
+                                denom > 0
+                                  ? Math.max(0, Math.min(100, numer / denom))
+                                  : null;
 
-                            // If all parts are entered as x/y, show total x/y + percentage.
-                            const frac = (s: string): { n: number; d: number } | null => {
-                              const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
-                              if (!m) return null;
-                              const n = Number(m[1]);
-                              const d = Number(m[2]);
-                              if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) return null;
-                              return { n, d };
-                            };
-                            const allFractions = allComplete && entered.every((e) => frac(e.raw) != null);
-                            const fracTotal = allFractions
-                              ? entered.reduce(
-                                  (acc, e) => {
-                                    const f = frac(e.raw)!;
-                                    return { n: acc.n + f.n, d: acc.d + f.d };
-                                  },
-                                  { n: 0, d: 0 },
+                              // If all parts are entered as x/y, show total x/y + percentage.
+                              const frac = (
+                                s: string,
+                              ): { n: number; d: number } | null => {
+                                const m = s.match(
+                                  /^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/,
+                                );
+                                if (!m) return null;
+                                const n = Number(m[1]);
+                                const d = Number(m[2]);
+                                if (
+                                  !Number.isFinite(n) ||
+                                  !Number.isFinite(d) ||
+                                  d <= 0
                                 )
-                              : null;
-
-                            const displayPct =
-                              allFractions && fracTotal && fracTotal.d > 0
-                                ? (fracTotal.n / fracTotal.d) * 100
-                                : pctNow;
-                            const pctLabel =
-                              displayPct != null && Number.isFinite(displayPct)
-                                ? `${Math.round(displayPct)}%`
-                                : null;
-
-                            const requiredAssessmentPct =
-                              typeof fill === "number" && Number.isFinite(fill)
-                                ? Math.max(0, Math.min(100, fill))
-                                : null;
-
-                            const enteredWeighted = entered.reduce((s, e, i2) => {
-                              if (e.pct == null) return s;
-                              const w = weights[i2] ?? 0;
-                              const ww = wSumAll > 0 ? (w > 0 ? w : 0) : 1;
-                              return s + e.pct * ww;
-                            }, 0);
-                            const totalWeight =
-                              wSumAll > 0 ? wSumAll : entered.length;
-                            const enteredWeight =
-                              wSumAll > 0
-                                ? wSumEntered
-                                : entered.filter((e) => e.pct != null).length;
-                            const remainingWeight = Math.max(
-                              0,
-                              totalWeight - enteredWeight,
-                            );
-
-                            const maxAchievablePct =
-                              totalWeight > 0
-                                ? Math.max(
-                                    0,
-                                    Math.min(
-                                      100,
-                                      (enteredWeighted + remainingWeight * 100) /
-                                        totalWeight,
-                                    ),
+                                  return null;
+                                return { n, d };
+                              };
+                              const allFractions =
+                                allComplete &&
+                                entered.every((e) => frac(e.raw) != null);
+                              const fracTotal = allFractions
+                                ? entered.reduce(
+                                    (acc, e) => {
+                                      const f = frac(e.raw)!;
+                                      return { n: acc.n + f.n, d: acc.d + f.d };
+                                    },
+                                    { n: 0, d: 0 },
                                   )
                                 : null;
 
-                            // requiredAssessmentPct is the required overall % for this assessment (from course goal).
+                              const displayPct =
+                                allFractions && fracTotal && fracTotal.d > 0
+                                  ? (fracTotal.n / fracTotal.d) * 100
+                                  : pctNow;
+                              const pctLabel =
+                                displayPct != null &&
+                                Number.isFinite(displayPct)
+                                  ? `${Math.round(displayPct)}%`
+                                  : null;
 
-                            const dots =
-                              rows.length > 1 ? (
-                                <div className="mt-1 flex justify-end gap-1">
-                                  {entered.map((e, idx2) => (
-                                    <AssessmentStatusDot
-                                      key={`${a.id}-part-dot-${idx2}`}
-                                      pct={e.pct}
-                                      seriesSlot="full"
-                                      shape="circle"
-                                    />
-                                  ))}
-                                </div>
-                              ) : null;
+                              const requiredAssessmentPct =
+                                typeof fill === "number" &&
+                                Number.isFinite(fill)
+                                  ? Math.max(0, Math.min(100, fill))
+                                  : null;
 
-                            if (!allComplete) {
-                              // In progress: show current-from-entered in black + required/max in green.
-                              const currentLabel = anyEntered ? pctLabel : "0%";
-                              const reqLabel =
-                                !computed.isGoalAchievable
+                              const enteredWeighted = entered.reduce(
+                                (s, e, i2) => {
+                                  if (e.pct == null) return s;
+                                  const w = weights[i2] ?? 0;
+                                  const ww = wSumAll > 0 ? (w > 0 ? w : 0) : 1;
+                                  return s + e.pct * ww;
+                                },
+                                0,
+                              );
+                              const totalWeight =
+                                wSumAll > 0 ? wSumAll : entered.length;
+                              const enteredWeight =
+                                wSumAll > 0
+                                  ? wSumEntered
+                                  : entered.filter((e) => e.pct != null).length;
+                              const remainingWeight = Math.max(
+                                0,
+                                totalWeight - enteredWeight,
+                              );
+
+                              const maxAchievablePct =
+                                totalWeight > 0
+                                  ? Math.max(
+                                      0,
+                                      Math.min(
+                                        100,
+                                        (enteredWeighted +
+                                          remainingWeight * 100) /
+                                          totalWeight,
+                                      ),
+                                    )
+                                  : null;
+
+                              // requiredAssessmentPct is the required overall % for this assessment (from course goal).
+
+                              const dots =
+                                rows.length > 1 ? (
+                                  <div className="mt-1 flex justify-end gap-1">
+                                    {entered.map((e, idx2) => (
+                                      <AssessmentStatusDot
+                                        key={`${a.id}-part-dot-${idx2}`}
+                                        pct={e.pct}
+                                        seriesSlot="full"
+                                        shape="circle"
+                                      />
+                                    ))}
+                                  </div>
+                                ) : null;
+
+                              if (!allComplete) {
+                                // In progress: show current-from-entered in black + required/max in green.
+                                const currentLabel = anyEntered
+                                  ? pctLabel
+                                  : "0%";
+                                const reqLabel = !computed.isGoalAchievable
                                   ? null
                                   : requiredAssessmentPct == null
                                     ? null
-                                    : requiredAssessmentPct <= 100
-                                      ? `~${Math.round(requiredAssessmentPct)}%`
-                                      : maxAchievablePct != null
-                                        ? `max ${Math.round(maxAchievablePct)}%`
-                                        : null;
+                                    : maxAchievablePct != null &&
+                                        requiredAssessmentPct > maxAchievablePct + 1e-9
+                                      ? `max ${Math.round(maxAchievablePct)}%`
+                                      : requiredAssessmentPct <= 100
+                                        ? `~${Math.ceil(requiredAssessmentPct - 1e-9)}%`
+                                        : maxAchievablePct != null
+                                          ? `max ${Math.round(maxAchievablePct)}%`
+                                          : null;
+                                return (
+                                  <div className="flex flex-col items-end">
+                                    <span className="font-semibold text-[var(--color-text-primary)]">
+                                      {currentLabel ?? "—"}
+                                      {reqLabel ? (
+                                        <span className="ml-2 gm-dash-mark-pct gm-dash-mark-pct--accent">
+                                          {reqLabel}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {dots}
+                                  </div>
+                                );
+                              }
+
+                              // Complete: calculated mark in black (and x/y total when applicable).
                               return (
                                 <div className="flex flex-col items-end">
                                   <span className="font-semibold text-[var(--color-text-primary)]">
-                                    {currentLabel ?? "—"}
-                                    {reqLabel ? (
-                                      <span className="ml-2 gm-dash-mark-pct gm-dash-mark-pct--accent">
-                                        {reqLabel}
-                                      </span>
-                                    ) : null}
+                                    {allFractions && fracTotal ? (
+                                      <>
+                                        {Number.isInteger(fracTotal.n)
+                                          ? String(fracTotal.n)
+                                          : fracTotal.n.toFixed(1)}
+                                        /
+                                        {Number.isInteger(fracTotal.d)
+                                          ? String(fracTotal.d)
+                                          : fracTotal.d.toFixed(1)}
+                                        {pctLabel ? (
+                                          <span className="ml-2 text-[var(--color-text-tertiary)]">
+                                            {pctLabel}
+                                          </span>
+                                        ) : null}
+                                      </>
+                                    ) : (
+                                      <>{pctLabel ?? "—"}</>
+                                    )}
                                   </span>
                                   {dots}
                                 </div>
                               );
-                            }
-
-                            // Complete: calculated mark in black (and x/y total when applicable).
+                            })()
+                          ) : (
+                            <>
+                              <input
+                                type="text"
+                                inputMode="text"
+                                enterKeyHint="done"
+                                autoCapitalize="off"
+                                autoCorrect="off"
+                                placeholder={
+                                  fillerPlaceholder && fill != null
+                                    ? String(Math.ceil(Math.max(0, fill) - 1e-9))
+                                    : "8/10 or 50"
+                                }
+                                value={value}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const next = e.target.value;
+                                  setDraft((p) => ({
+                                    ...p,
+                                    [a.id]: next,
+                                  }));
+                                  const t = next.trim();
+                                  if (t !== "" && !isValidMarkInput(next)) {
+                                    return;
+                                  }
+                                  emitMarkChange({
+                                    enrolmentId: enrolment.id,
+                                    assessmentId: a.id,
+                                    mark: t === "" ? null : t,
+                                  });
+                                }}
+                                onBlur={async (e) => {
+                                  const v = e.target.value;
+                                  if (/^\/\d+$/.test(v.trim())) return;
+                                  setDraft((p) => {
+                                    const copy = { ...p };
+                                    delete copy[a.id];
+                                    return copy;
+                                  });
+                                  if (!isValidMarkInput(v)) return;
+                                  await saveAssessmentMark(a.id, v);
+                                }}
+                                className={`gm-dash-mark-input ${fillerPlaceholder ? "gm-dash-mark-input--hint" : ""} ${invalid ? "gm-dash-mark-input--invalid" : ""}`}
+                              />
+                              {markHint}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="!py-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {(() => {
+                            const goalMarkPercent =
+                              computed.fillerMarks[i] ?? null;
+                            const assessmentCourseWeight =
+                              typeof a.weighting === "number"
+                                ? Math.round(a.weighting)
+                                : 0;
+                            const rows: SubAssessmentRow[] =
+                              ensureSubAssessmentRows(
+                                a.sub_assessments?.rows?.length
+                                  ? a.sub_assessments.rows.map((r) => ({
+                                      name: r.name,
+                                      mark: r.mark,
+                                      weight: (r as { weight?: number }).weight,
+                                    }))
+                                  : [{ name: "Part 1", mark: null }],
+                                assessmentCourseWeight,
+                              );
                             return (
-                              <div className="flex flex-col items-end">
-                                <span className="font-semibold text-[var(--color-text-primary)]">
-                                  {allFractions && fracTotal ? (
-                                    <>
-                                      {Number.isInteger(fracTotal.n) ? String(fracTotal.n) : fracTotal.n.toFixed(1)}
-                                      /
-                                      {Number.isInteger(fracTotal.d) ? String(fracTotal.d) : fracTotal.d.toFixed(1)}
-                                      {pctLabel ? (
-                                        <span className="ml-2 text-[var(--color-text-tertiary)]">
-                                          {pctLabel}
-                                        </span>
-                                      ) : null}
-                                    </>
-                                  ) : (
-                                    <>
-                                      {pctLabel ?? "—"}
-                                    </>
-                                  )}
-                                </span>
-                                {dots}
+                              <div className="py-0.5">
+                                <AssessmentCalculatorInline
+                                  assessmentName={a.assessment_name}
+                                  requiredMark={goalMarkPercent}
+                                  hideGoal={!computed.isGoalAchievable}
+                                  assessmentCourseWeightPercent={
+                                    assessmentCourseWeight
+                                  }
+                                  rows={rows}
+                                  onRowsChange={(next) =>
+                                    void applySubAssessmentRows(a.id, next)
+                                  }
+                                />
                               </div>
                             );
-                          })()
-                        : (
-                          <>
-                            <input
-                              type="text"
-                              inputMode="text"
-                              enterKeyHint="done"
-                              autoCapitalize="off"
-                              autoCorrect="off"
-                              placeholder={
-                                fillerPlaceholder && fill != null
-                                  ? String(Math.round(fill))
-                                  : "8/10 or 50"
-                              }
-                              value={value}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => {
-                                const next = e.target.value;
-                                setDraft((p) => ({
-                                  ...p,
-                                  [a.id]: next,
-                                }));
-                                const t = next.trim();
-                                if (
-                                  t !== "" &&
-                                  !isValidMarkInput(next)
-                                ) {
-                                  return;
-                                }
-                                emitMarkChange({
-                                  enrolmentId: enrolment.id,
-                                  assessmentId: a.id,
-                                  mark: t === "" ? null : t,
-                                });
-                              }}
-                              onBlur={async (e) => {
-                                const v = e.target.value;
-                                if (/^\/\d+$/.test(v.trim())) return;
-                                setDraft((p) => {
-                                  const copy = { ...p };
-                                  delete copy[a.id];
-                                  return copy;
-                                });
-                                if (!isValidMarkInput(v)) return;
-                                await saveAssessmentMark(a.id, v);
-                              }}
-                              className={`gm-dash-mark-input ${fillerPlaceholder ? "gm-dash-mark-input--hint" : ""} ${invalid ? "gm-dash-mark-input--invalid" : ""}`}
-                            />
-                            {markHint}
-                          </>
-                        )}
-                    </div>
-                  </td>
-                </tr>
-                {isExpanded ? (
-                  <tr>
-                    <td colSpan={4} onClick={(e) => e.stopPropagation()}>
-                      {(() => {
-                        const goalMarkPercent = computed.fillerMarks[i] ?? null;
-                        const assessmentCourseWeight =
-                          typeof a.weighting === "number" ? Math.round(a.weighting) : 0;
-                        const rows: SubAssessmentRow[] = ensureSubAssessmentRows(
-                          a.sub_assessments?.rows?.length
-                            ? a.sub_assessments.rows.map((r) => ({
-                                name: r.name,
-                                mark: r.mark,
-                                weight: (r as { weight?: number }).weight,
-                              }))
-                            : [{ name: "Part 1", mark: null }],
-                          assessmentCourseWeight,
-                        );
-                        return (
-                          <div className="px-3 pb-4 pt-2">
-                            <AssessmentCalculatorInline
-                              assessmentName={a.assessment_name}
-                              requiredMark={goalMarkPercent}
-                              hideGoal={!computed.isGoalAchievable}
-                              assessmentCourseWeightPercent={assessmentCourseWeight}
-                              rows={rows}
-                              onRowsChange={(next) => void applySubAssessmentRows(a.id, next)}
-                            />
-                          </div>
-                        );
-                      })()}
-                    </td>
-                  </tr>
-                ) : null}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                          })()}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Inline calculator renders under the expanded assessment row. */}
@@ -1592,8 +1667,9 @@ export function CourseCard({
                       2. Enter marks out of a total
                     </p>
                     <p className="mt-1">
-                      Use a fraction like <span className="font-mono">8/10</span>{" "}
-                      or <span className="font-mono">24/30</span>.
+                      Use a fraction like{" "}
+                      <span className="font-mono">8/10</span> or{" "}
+                      <span className="font-mono">24/30</span>.
                     </p>
                   </div>
                   <div>
@@ -1621,7 +1697,9 @@ export function CourseCard({
               role="presentation"
             >
               {(() => {
-                const a = assessments.find((x) => x.id === hurdleOpen.assessmentId);
+                const a = assessments.find(
+                  (x) => x.id === hurdleOpen.assessmentId,
+                );
                 if (!a) return null;
 
                 const threshold =
@@ -1779,8 +1857,8 @@ export function CourseCard({
                     Remove this course?
                   </h2>
                   <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                    {meta.code} will be removed from this semester, including all
-                    assessment marks. This cannot be undone.
+                    {meta.code} will be removed from this semester, including
+                    all assessment marks. This cannot be undone.
                   </p>
                   {deleteError ? (
                     <p className="mt-3 text-sm text-red-600" role="alert">

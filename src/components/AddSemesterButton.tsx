@@ -7,9 +7,11 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 export function AddSemesterButton({
   className,
   plan = "free",
+  semesterCount,
 }: {
   className?: string;
   plan?: "free" | "pro";
+  semesterCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -30,7 +32,11 @@ export function AddSemesterButton({
       </button>
       {open ? <AddSemesterModal onClose={() => setOpen(false)} /> : null}
       {upgradeOpen ? (
-        <UpgradeModal onClose={() => setUpgradeOpen(false)} />
+        <UpgradeModal
+          reason="semesters"
+          semesterCount={semesterCount}
+          onClose={() => setUpgradeOpen(false)}
+        />
       ) : null}
     </>
   );

@@ -117,6 +117,8 @@ export async function POST(request: Request) {
       context_semester: number | null;
     }>();
 
+  const hasContextColumns = !semResNew.error;
+
   if (semResNew.error) {
     const semResOld = await supabase
       .from("semesters")
@@ -234,7 +236,11 @@ export async function POST(request: Request) {
       .eq("semester_id", semesterId);
     const existingCount = count ?? 0;
     if (existingCount === 0) {
-      if (contextMode === "freeform") {
+      // If the context columns don't exist yet (e.g. migrations not applied),
+      // skip locking and just add the course(s).
+      if (!hasContextColumns) {
+        // no-op
+      } else if (contextMode === "freeform") {
         const { error: lockErr } = await supabase
           .from("semesters")
           .update({ context_mode: "freeform" })

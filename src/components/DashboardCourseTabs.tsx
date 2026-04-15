@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { CourseCard } from "@/components/CourseCard";
 
 type AssessmentPreview = {
@@ -397,10 +397,12 @@ function CourseTabPreviewBar({
           <span
             key={p.key}
             className="gm-dash-course-tab-weight-seg gm-dash-course-tab-weight-seg--unachievable"
-            style={{
-              width: `${Math.max(0, Math.min(100, p.widthPct))}%`,
-              ["--gm-unach-tint" as any]: p.tint,
-            }}
+            style={
+              {
+                width: `${Math.max(0, Math.min(100, p.widthPct))}%`,
+                "--gm-unach-tint": p.tint,
+              } as CSSProperties
+            }
           />
         ))}
       </div>

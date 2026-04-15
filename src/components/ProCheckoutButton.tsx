@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import type { ProPriceTier } from "@/lib/stripePriceIds";
 import posthog from "posthog-js";
 
 export function ProCheckoutButton({
-  tier,
   className,
   style,
   children,
 }: {
-  tier: ProPriceTier;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -25,7 +22,7 @@ export function ProCheckoutButton({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({}),
       });
       const raw = await res.text();
       let data: unknown = null;
@@ -64,7 +61,7 @@ export function ProCheckoutButton({
         setError(message);
         return;
       }
-      posthog.capture("checkout_started", { tier });
+      posthog.capture("checkout_started", { cadence: "annual" });
       window.location.href = url;
     } catch {
       setError("Network error. Try again.");

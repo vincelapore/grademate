@@ -3,21 +3,11 @@ import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteBaseUrl } from "@/lib/siteBaseUrl";
 import { getStripe } from "@/lib/stripe";
-import {
-  envKeyForTier,
-  priceIdForTier,
-  type ProPriceTier,
-} from "@/lib/stripePriceIds";
+import { priceIdForTier } from "@/lib/stripePriceIds";
 
 export const dynamic = "force-dynamic";
 
-function isProPriceTier(x: unknown): x is ProPriceTier {
-  return (
-    x === "founding_annual" || x === "annual" || x === "monthly"
-  );
-}
-
-export async function POST(request: Request) {
+export async function POST() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -39,23 +29,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const bodyUnknown: unknown = await request.json().catch(() => null);
-  const tier =
-    typeof bodyUnknown === "object" &&
-    bodyUnknown != null &&
-    "tier" in bodyUnknown
-      ? (bodyUnknown as { tier: unknown }).tier
-      : null;
-  if (!isProPriceTier(tier)) {
-    return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
-  }
-
-  const priceId = priceIdForTier(tier);
+  // Single-plan billing: always use the annual price.
+  const priceId = priceIdForTier("annual");
   if (!priceId) {
-    const key = envKeyForTier(tier);
     return NextResponse.json(
       {
-        error: `Stripe price not configured: set ${key} in .env.local (Stripe Dashboard → Products → Price → API ID price_…).`,
+        error:
+          "Stripe price not configured: set STRIPE_PRICE_ANNUAL in .env.local (Stripe Dashboard → Products → Price → API ID price_…).",
       },
       { status: 503 },
     );
@@ -98,7 +78,7 @@ export async function POST(request: Request) {
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/dashboard/settings?checkout=success`,
+    success_url: `${baseUrl}/dashboard/settings?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard/settings?checkout=cancelled`,
     client_reference_id: user.id,
     metadata: { supabase_user_id: user.id },
@@ -129,7 +109,8 @@ export async function POST(request: Request) {
       sessionParams.customer
     ) {
       try {
-        const { customer: _drop, ...withoutCustomer } = sessionParams;
+        const { customer: _removed, ...withoutCustomer } = sessionParams;
+        void _removed;
         session = await stripe.checkout.sessions.create({
           ...withoutCustomer,
           ...(email?.trim()

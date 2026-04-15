@@ -306,7 +306,7 @@ export function AddCourseSearch({
 
   async function saveAll() {
     setError(null);
-    setLoadingCourse(true);
+    setSaving(true);
     try {
       const res = await fetch("/api/onboarding/courses", {
         method: "POST",

@@ -1,9 +1,7 @@
-export type ProPriceTier = "founding_annual" | "annual" | "monthly";
+export type ProPriceTier = "annual";
 
 const ENV_KEYS: Record<ProPriceTier, string> = {
-  founding_annual: "STRIPE_PRICE_FOUNDING_ANNUAL",
   annual: "STRIPE_PRICE_ANNUAL",
-  monthly: "STRIPE_PRICE_MONTHLY",
 };
 
 export function envKeyForTier(tier: ProPriceTier): string {
@@ -17,9 +15,5 @@ export function priceIdForTier(tier: ProPriceTier): string | null {
 }
 
 export function isStripeBillingConfigured(): boolean {
-  return (
-    priceIdForTier("founding_annual") != null &&
-    priceIdForTier("annual") != null &&
-    priceIdForTier("monthly") != null
-  );
+  return priceIdForTier("annual") != null;
 }

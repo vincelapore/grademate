@@ -12,6 +12,7 @@ export function DashboardHeader({
   calendarSubscribe,
   plan,
   overallLocked,
+  semesterCount,
 }: {
   activeView: "home" | "semester" | "overall";
   calendarSubscribe?: {
@@ -20,6 +21,7 @@ export function DashboardHeader({
   } | null;
   plan: "free" | "pro";
   overallLocked: boolean;
+  semesterCount?: number;
 }) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -191,7 +193,11 @@ export function DashboardHeader({
         ) : null}
       </header>
       {upgradeOpen ? (
-        <UpgradeModal onClose={() => setUpgradeOpen(false)} />
+        <UpgradeModal
+          reason={overallLocked ? "overall" : "generic"}
+          semesterCount={semesterCount}
+          onClose={() => setUpgradeOpen(false)}
+        />
       ) : null}
     </>
   );

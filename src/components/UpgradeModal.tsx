@@ -4,9 +4,29 @@ import { ProCheckoutButton } from "@/components/ProCheckoutButton";
 
 export function UpgradeModal({
   onClose,
+  reason = "courses",
+  semesterCount,
+  courseCount,
 }: {
   onClose: () => void;
+  reason?: "courses" | "semesters" | "overall" | "generic";
+  semesterCount?: number;
+  courseCount?: number;
 }) {
+  const title =
+    reason === "semesters" || reason === "overall"
+      ? `You’re tracking ${typeof semesterCount === "number" ? semesterCount : 1} semester${typeof semesterCount === "number" && semesterCount === 1 ? "" : "s"}`
+      : reason === "generic"
+        ? "Upgrade to Grademate Pro"
+        : `You’re tracking ${typeof courseCount === "number" ? courseCount : 3} course${typeof courseCount === "number" && courseCount === 1 ? "" : "s"}`;
+
+  const sub =
+    reason === "semesters" || reason === "overall"
+      ? "Free includes 1 semester. Upgrade to add more semesters and unlock overall view."
+      : reason === "generic"
+        ? "Unlock multiple semesters, overall view, and more than four courses per semester."
+        : "Most students take 4. Upgrade to add more — and unlock the good stuff.";
+
   return (
     <div
       role="dialog"
@@ -18,10 +38,8 @@ export function UpgradeModal({
       <div className="gm-paywall-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="gm-paywall-handle" aria-hidden />
         <div className="gm-paywall-eyebrow">Grademate Pro</div>
-        <h2 className="gm-paywall-title">You're tracking 3 courses</h2>
-        <p className="gm-paywall-sub">
-          Most students take 4. Upgrade to add more — and unlock the good stuff.
-        </p>
+        <h2 className="gm-paywall-title">{title}</h2>
+        <p className="gm-paywall-sub">{sub}</p>
 
         <div className="gm-paywall-feature">
           <div className="gm-paywall-feat-icon" aria-hidden>
@@ -93,20 +111,30 @@ export function UpgradeModal({
         <div className="gm-paywall-price">
           <div>
             <div className="gm-paywall-price-amount">
-              $19<span className="gm-paywall-price-suffix">/year</span>
+              $2.42<span className="gm-paywall-price-suffix">/mo</span>
             </div>
-            <div className="gm-paywall-price-sub">Less than $1.60/month</div>
+            <div className="gm-paywall-price-sub">Billed once at $29/year</div>
           </div>
-          <div className="gm-paywall-badge">Founding rate</div>
+          <div className="gm-paywall-badge">Annual</div>
         </div>
 
         <ProCheckoutButton
-          tier="founding_annual"
           className="gm-paywall-cta"
           style={{ width: "100%" }}
         >
-          Unlock Grademate Pro
+          Continue to checkout
         </ProCheckoutButton>
+        <div
+          style={{
+            marginTop: 10,
+            fontSize: 12.5,
+            lineHeight: 1.35,
+            color: "var(--color-text-tertiary)",
+          }}
+        >
+          Founding members: use code <b>UQYEEHAW</b> for $19/year (≈ $1.60/mo).{" "}
+          Limited to the first 100.
+        </div>
         <button type="button" className="gm-paywall-skip" onClick={onClose}>
           Maybe later
         </button>

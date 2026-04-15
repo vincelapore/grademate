@@ -60,7 +60,9 @@ export function OnboardingFlow({
     setSaving(false);
     if (!res.ok) {
       const msg =
-        typeof jsonUnknown === "object" && jsonUnknown != null && "error" in jsonUnknown
+        typeof jsonUnknown === "object" &&
+        jsonUnknown != null &&
+        "error" in jsonUnknown
           ? String((jsonUnknown as { error: unknown }).error)
           : "Could not create semester.";
       setError(msg);

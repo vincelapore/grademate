@@ -247,6 +247,7 @@ export default async function DashboardPage({
         calendarSubscribe={calendarSubscribe}
         plan={plan}
         overallLocked={plan === "free" && semesters.length > 1}
+        semesterCount={semesters.length}
       />
 
       {view === "home" ? (
@@ -309,7 +310,11 @@ export default async function DashboardPage({
               })}
             </div>
             <div style={{ marginTop: 10 }}>
-              <AddSemesterButton className="gm-dash-components-add" plan={plan} />
+              <AddSemesterButton
+                className="gm-dash-components-add"
+                plan={plan}
+                semesterCount={semesters.length}
+              />
             </div>
           </section>
         </div>
