@@ -249,13 +249,16 @@ export default function Home() {
                 <span className="gm-check">✓</span> Everything in Free
               </li>
               <li>
-                <span className="gm-check">✓</span> Unlimited courses &amp; semesters
+                <span className="gm-check">✓</span> Unlimited courses &amp;
+                semesters
               </li>
               <li>
-                <span className="gm-check">✓</span> Overall view + Hell Week calendar
+                <span className="gm-check">✓</span> Overall view + Hell Week
+                calendar
               </li>
               <li>
-                <span className="gm-check">✓</span> Manage billing in-app (Stripe portal)
+                <span className="gm-check">✓</span> Manage billing in-app
+                (Stripe portal)
               </li>
             </ul>
             <GmButtonLink className="gm-price-btn featured" href="/auth/login">
