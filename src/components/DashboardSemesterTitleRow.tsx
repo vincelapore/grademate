@@ -29,8 +29,8 @@ export function DashboardSemesterTitleRow({
   const router = useRouter();
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [showCourseLimit, setShowCourseLimit] = useState(false);
-  const atFreeLimit = plan === "free" && addCourse.existingCourseCount >= 4;
-  const canAddCourse = plan === "pro" || addCourse.existingCourseCount < 4;
+  const atFreeLimit = plan === "free" && addCourse.existingCourseCount >= 3;
+  const canAddCourse = plan === "pro" || addCourse.existingCourseCount < 3;
 
   return (
     <>

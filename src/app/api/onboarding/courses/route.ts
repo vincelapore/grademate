@@ -16,7 +16,7 @@ function profileUrlForDb(raw: unknown): string | null {
 
 export const dynamic = "force-dynamic";
 
-const FREE_MAX_COURSES_PER_SEMESTER = 4;
+const FREE_MAX_COURSES_PER_SEMESTER = 3;
 
 type CoursePayload = {
   courseCode: string;
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
     const existingCount = count ?? 0;
     if (existingCount + courses.length > FREE_MAX_COURSES_PER_SEMESTER) {
       return NextResponse.json(
-        { error: "Upgrade to Pro to track more than 4 courses." },
+        { error: "Upgrade to Pro to track more than 3 courses." },
         { status: 402 },
       );
     }

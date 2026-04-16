@@ -67,7 +67,7 @@ export function AddCourseSearch({
   delivery: _delivery,
   onDone,
   onContextLocked,
-  maxCourses = 4,
+  maxCourses = 3,
   initialCourseCount = 0,
 }: {
   university: "uq" | "qut";

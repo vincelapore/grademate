@@ -24,7 +24,7 @@ export function UpgradeModal({
     reason === "semesters" || reason === "overall"
       ? "Free includes 1 semester. Upgrade to add more semesters and unlock overall view."
       : reason === "generic"
-        ? "Unlock multiple semesters, overall view, and more than four courses per semester."
+        ? "Unlock multiple semesters, overall view, and more than three courses per semester."
         : "Most students take 4. Upgrade to add more — and unlock the good stuff.";
 
   return (
@@ -51,10 +51,12 @@ export function UpgradeModal({
             </svg>
           </div>
           <div>
-            <div className="gm-paywall-feat-name">Auto-import from your uni</div>
+            <div className="gm-paywall-feat-name">
+              Auto-import from your uni
+            </div>
             <div className="gm-paywall-feat-desc">
-              Assessments, weights &amp; due dates load instantly for UQ, Monash,
-              UniMelb and more
+              Assessments, weights &amp; due dates load instantly for UQ,
+              Monash, UniMelb and more
             </div>
           </div>
         </div>
@@ -101,7 +103,9 @@ export function UpgradeModal({
             </svg>
           </div>
           <div>
-            <div className="gm-paywall-feat-name">Sync across all your devices</div>
+            <div className="gm-paywall-feat-name">
+              Sync across all your devices
+            </div>
             <div className="gm-paywall-feat-desc">
               Phone, laptop, tablet — your grades follow you
             </div>
@@ -111,30 +115,36 @@ export function UpgradeModal({
         <div className="gm-paywall-price">
           <div>
             <div className="gm-paywall-price-amount">
-              $2.42<span className="gm-paywall-price-suffix">/mo</span>
+              <span
+                style={{
+                  textDecoration: "line-through",
+                  opacity: 0.6,
+                  marginRight: 10,
+                }}
+              >
+                $2.42<span className="gm-paywall-price-suffix">/mo</span>
+              </span>
+              <span style={{ color: "var(--gm-accent)" }}>
+                $1.60<span className="gm-paywall-price-suffix">/mo</span>
+              </span>
             </div>
-            <div className="gm-paywall-price-sub">Billed once at $29/year</div>
+            <div className="gm-paywall-price-sub">
+              <span style={{ textDecoration: "line-through", opacity: 0.7 }}>
+                $29/year
+              </span>
+              <span style={{ margin: "0 8px", opacity: 0.5 }}>→</span>
+              <span style={{ fontWeight: 700, color: "var(--gm-accent)" }}>
+                $19/year FOREVER
+              </span>{" "}
+              with code <b>UQYEEHAW</b> (first 100)
+            </div>
           </div>
           <div className="gm-paywall-badge">Annual</div>
         </div>
 
-        <ProCheckoutButton
-          className="gm-paywall-cta"
-          style={{ width: "100%" }}
-        >
+        <ProCheckoutButton className="gm-paywall-cta" style={{ width: "100%" }}>
           Continue to checkout
         </ProCheckoutButton>
-        <div
-          style={{
-            marginTop: 10,
-            fontSize: 12.5,
-            lineHeight: 1.35,
-            color: "var(--color-text-tertiary)",
-          }}
-        >
-          Founding members: use code <b>UQYEEHAW</b> for $19/year (≈ $1.60/mo).{" "}
-          Limited to the first 100.
-        </div>
         <button type="button" className="gm-paywall-skip" onClick={onClose}>
           Maybe later
         </button>
@@ -142,4 +152,3 @@ export function UpgradeModal({
     </div>
   );
 }
-

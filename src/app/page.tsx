@@ -209,7 +209,7 @@ export default function Home() {
                 <span className="gm-check">✓</span> Current semester
               </li>
               <li>
-                <span className="gm-check">✓</span> Up to 4 courses
+                <span className="gm-check">✓</span> Up to 3 courses
               </li>
               <li>
                 <span className="gm-check">✓</span> Grade calculator

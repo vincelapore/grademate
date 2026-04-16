@@ -46,7 +46,7 @@ export function AddCourseModal({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const maxCourses = plan === "pro" ? 999 : 4;
+  const maxCourses = plan === "pro" ? 999 : 3;
   const nowYear = new Date().getFullYear();
 
   const inferredLockedMode: "freeform" | "scraper" | null =
@@ -84,7 +84,7 @@ export function AddCourseModal({
   }, [freeformName]);
 
   const [showLimit, setShowLimit] = useState(
-    plan === "free" && existingCourseCount >= 4,
+    plan === "free" && existingCourseCount >= 3,
   );
 
   if (showLimit) {
