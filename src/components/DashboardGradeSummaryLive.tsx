@@ -1,0 +1,208 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  computeCourseSummary,
+  computeSemesterCurrentAndOverall,
+  countAssessmentsDueThisWeek,
+} from "@/lib/calculations/gpa";
+import { uqPercentToGradePoint } from "@/lib/calculations/grades";
+import { parseMarkToPercentage } from "@/lib/grades";
+import HellWeekCalendar, {
+  type HellWeekAssessment,
+} from "@/components/HellWeekCalendar";
+import { StatsRow } from "@/components/StatsRow";
+
+type AssessmentRow = {
+  id: string;
+  assessment_name: string;
+  weighting: number;
+  mark: string | null;
+  due_date: string | null;
+  sub_assessments?: {
+    rows: { name: string; mark: string | null; weight?: number }[];
+  } | null;
+  is_hurdle?: boolean | null;
+  hurdle_threshold?: number | null;
+  hurdle_requirements?: string | null;
+};
+
+type EnrolmentRow = {
+  id: string;
+  course_code: string;
+  course_name: string;
+  credit_points: number;
+  target_grade: number | null;
+  assessment_results: AssessmentRow[];
+};
+
+type MarkEventDetail = {
+  enrolmentId: string;
+  assessmentId: string;
+  mark: string | null;
+};
+
+function isMarkEventDetail(x: unknown): x is MarkEventDetail {
+  if (typeof x !== "object" || x == null) return false;
+  const r = x as Record<string, unknown>;
+  return (
+    typeof r.enrolmentId === "string" &&
+    typeof r.assessmentId === "string" &&
+    (typeof r.mark === "string" || r.mark == null)
+  );
+}
+
+export function DashboardGradeSummaryLive({
+  plan,
+  enrolments,
+  semesterStart,
+  semesterEnd,
+}: {
+  plan: "free" | "pro";
+  enrolments: EnrolmentRow[];
+  semesterStart: string;
+  semesterEnd: string;
+}) {
+  const [local, setLocal] = useState<EnrolmentRow[]>(enrolments);
+  const [hellOpen, setHellOpen] = useState(false);
+
+  // If the server re-renders with new data (refresh/navigation), sync baseline.
+  useEffect(() => {
+    setLocal(enrolments);
+  }, [enrolments]);
+
+  useEffect(() => {
+    function onMark(e: Event) {
+      const ce = e as CustomEvent<unknown>;
+      if (!isMarkEventDetail(ce.detail)) return;
+      const { enrolmentId, assessmentId, mark } = ce.detail;
+      setLocal((prev) =>
+        prev.map((en) =>
+          en.id !== enrolmentId
+            ? en
+            : {
+                ...en,
+                assessment_results: en.assessment_results.map((a) =>
+                  a.id === assessmentId ? { ...a, mark } : a,
+                ),
+              },
+        ),
+      );
+    }
+    window.addEventListener("gm:mark-change", onMark);
+    return () => window.removeEventListener("gm:mark-change", onMark);
+  }, []);
+
+  const summary = useMemo(() => {
+    const courseAssessments = local.map((e) =>
+      (e.assessment_results ?? []).map((a) => ({
+        weighting: a.weighting,
+        mark: a.mark,
+        due_date: a.due_date,
+        sub_assessments: a.sub_assessments ?? null,
+      })),
+    );
+    return computeSemesterCurrentAndOverall(courseAssessments);
+  }, [local]);
+
+  const wam = useMemo(() => {
+    const rows = local
+      .map((e) => {
+        const summary = computeCourseSummary({
+          credit_points: e.credit_points,
+          target_grade: e.target_grade,
+          assessments: (e.assessment_results ?? []).map((a) => ({
+            weighting: a.weighting,
+            mark: a.mark,
+            due_date: a.due_date,
+            sub_assessments: a.sub_assessments ?? null,
+          })),
+        });
+        return {
+          cp: typeof e.credit_points === "number" && Number.isFinite(e.credit_points) && e.credit_points > 0 ? e.credit_points : 0,
+          pct: summary.completedAveragePercent,
+        };
+      })
+      .filter((r) => typeof r.pct === "number" && Number.isFinite(r.pct));
+
+    if (!rows.length) return null;
+
+    const hasValidCp = rows.some((r) => r.cp > 0);
+    const denom = hasValidCp
+      ? rows.reduce((s, r) => s + r.cp, 0)
+      : rows.length;
+    if (denom <= 0) return null;
+
+    const wamPct = hasValidCp
+      ? rows.reduce((s, r) => s + (r.pct! * r.cp), 0) / denom
+      : rows.reduce((s, r) => s + r.pct!, 0) / denom;
+
+    const wamGp = hasValidCp
+      ? rows.reduce((s, r) => s + uqPercentToGradePoint(r.pct!) * r.cp, 0) / denom
+      : rows.reduce((s, r) => s + uqPercentToGradePoint(r.pct!), 0) / denom;
+
+    if (!Number.isFinite(wamPct) || !Number.isFinite(wamGp)) return null;
+
+    return `WAM ${wamPct.toFixed(1)}% · ${wamGp.toFixed(1)} / 7`;
+  }, [local]);
+
+  const dueThisWeek = useMemo(
+    () => countAssessmentsDueThisWeek(local),
+    [local],
+  );
+
+  const allAssessmentsComplete = useMemo(() => {
+    for (const e of local) {
+      for (const a of e.assessment_results ?? []) {
+        const rows = a.sub_assessments?.rows;
+        const hasParts = (rows?.length ?? 0) > 1;
+        if (hasParts) {
+          const everyPartComplete = rows!.every((r) =>
+            Number.isFinite(parseMarkToPercentage(r.mark)),
+          );
+          if (!everyPartComplete) return false;
+          continue;
+        }
+        if (!Number.isFinite(parseMarkToPercentage(a.mark))) {
+          return false;
+        }
+      }
+    }
+    return local.length > 0;
+  }, [local]);
+
+  const hellAssessments: HellWeekAssessment[] = useMemo(() => {
+    const out: HellWeekAssessment[] = [];
+    for (const e of local) {
+      for (const a of e.assessment_results ?? []) {
+        if (!a.due_date) continue;
+        out.push({
+          id: a.id,
+          assessment_name: a.assessment_name,
+          weighting: a.weighting,
+          due_date: a.due_date,
+          course_code: e.course_code,
+          course_name: e.course_name,
+        });
+      }
+    }
+    return out;
+  }, [local]);
+
+  return (
+    <>
+      <StatsRow
+        current={summary?.current ?? null}
+        wam={wam}
+      />
+      {hellOpen ? (
+        <HellWeekCalendar
+          assessments={hellAssessments}
+          semesterStart={semesterStart}
+          semesterEnd={semesterEnd}
+          onClose={() => setHellOpen(false)}
+        />
+      ) : null}
+    </>
+  );
+}

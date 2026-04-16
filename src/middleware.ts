@@ -1,8 +1,11 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  // Next 16 + Turbopack currently fails to bundle `@supabase/ssr` for Edge middleware
+  // in this repo, causing "Can't resolve @supabase/supabase-js" at dev time.
+  // We keep auth protection in server layouts (`/dashboard`, `/onboarding`) instead.
+  void request;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -14,6 +17,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard/:path*",
+    "/onboarding",
   ],
 };

@@ -1,168 +1,272 @@
-import Link from "next/link";
-
-const universities = [
-    {
-        id: "uq",
-        name: "University of Queensland",
-        shortName: "UQ",
-        location: "Brisbane, Australia",
-        color: "from-purple-500/20 to-purple-600/10",
-        borderColor: "border-purple-500/30 hover:border-purple-400/50",
-        textColor: "text-purple-300",
-        comingSoon: false,
-    },
-    {
-        id: "qut",
-        name: "Queensland University of Technology",
-        shortName: "QUT",
-        location: "Brisbane, Australia",
-        color: "from-slate-500/10 to-slate-600/5",
-        borderColor: "border-slate-700/30",
-        textColor: "text-slate-500",
-        comingSoon: true,
-    },
-];
+import { GmButtonAnchor, GmButtonLink } from "@/components/gm/GmButton";
+import { GmShell } from "@/components/gm/GmShell";
+import { LandingGoogleButton } from "@/components/LandingGoogleButton";
 
 export default function Home() {
-    return (
-        <div className='flex min-h-screen flex-col bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900'>
-            <main className='mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-12 sm:px-6 sm:py-20'>
-                <div className='mb-12 text-center sm:mb-16'>
-                    <h1 className='bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl'>
-                        GradeMate
-                    </h1>
-                    <p className='mx-auto mt-4 max-w-xl text-lg text-slate-400'>
-                        Track your semester progress, calculate grades, and see
-                        what you need to hit your target.
-                    </p>
-                </div>
-
-                <div className='mb-8'>
-                    <h2 className='mb-4 text-sm font-medium uppercase tracking-wider text-slate-500'>
-                        Select your university
-                    </h2>
-                    <div className='grid gap-4 sm:grid-cols-2'>
-                        {universities.map((uni) =>
-                            uni.comingSoon ? (
-                                <div
-                                    key={uni.id}
-                                    className={`group relative cursor-not-allowed overflow-hidden rounded-xl border bg-gradient-to-br ${uni.color} ${uni.borderColor} p-6 opacity-60`}
-                                >
-                                    <div className='relative z-10'>
-                                        <div className='flex items-center gap-3'>
-                                            <span
-                                                className={`text-2xl font-bold ${uni.textColor}`}
-                                            >
-                                                {uni.shortName}
-                                            </span>
-                                            <span className='rounded-full bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-400'>
-                                                Coming Soon
-                                            </span>
-                                        </div>
-                                        <p className='mt-2 font-medium text-slate-400'>
-                                            {uni.name}
-                                        </p>
-                                        <p className='mt-1 text-sm text-slate-500'>
-                                            {uni.location}
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Link
-                                    key={uni.id}
-                                    href={`/university/${uni.id}`}
-                                    className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br ${uni.color} ${uni.borderColor} p-6 transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20`}
-                                >
-                                    <div className='relative z-10'>
-                                        <div className='flex items-center gap-3'>
-                                            <span
-                                                className={`text-2xl font-bold ${uni.textColor}`}
-                                            >
-                                                {uni.shortName}
-                                            </span>
-                                        </div>
-                                        <p className='mt-2 font-medium text-slate-200'>
-                                            {uni.name}
-                                        </p>
-                                        <p className='mt-1 text-sm text-slate-400'>
-                                            {uni.location}
-                                        </p>
-                                    </div>
-                                    <div className='absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 transition-transform group-hover:translate-x-1 group-hover:text-slate-500'>
-                                        <svg
-                                            className='h-6 w-6'
-                                            fill='none'
-                                            stroke='currentColor'
-                                            viewBox='0 0 24 24'
-                                        >
-                                            <path
-                                                strokeLinecap='round'
-                                                strokeLinejoin='round'
-                                                strokeWidth={2}
-                                                d='M9 5l7 7-7 7'
-                                            />
-                                        </svg>
-                                    </div>
-                                </Link>
-                            )
-                        )}
-
-                        <div className='flex items-center justify-center rounded-xl border border-dashed border-slate-700/50 bg-slate-900/20 p-6 text-center'>
-                            <p className='text-sm text-slate-500'>
-                                More universities coming soon
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className='mt-auto pt-12'>
-                    <div className='rounded-xl border border-slate-800/50 bg-slate-900/30 p-6'>
-                        <h3 className='font-medium text-slate-200'>
-                            How it works
-                        </h3>
-                        <ul className='mt-4 space-y-3 text-sm text-slate-400'>
-                            <li className='flex gap-3'>
-                                <span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-medium text-slate-300'>
-                                    1
-                                </span>
-                                <span>
-                                    Add your courses — assessment items are
-                                    loaded automatically from your university
-                                </span>
-                            </li>
-                            <li className='flex gap-3'>
-                                <span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-medium text-slate-300'>
-                                    2
-                                </span>
-                                <span>
-                                    Enter your marks as percentages or fractions
-                                    (e.g. 17/20)
-                                </span>
-                            </li>
-                            <li className='flex gap-3'>
-                                <span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-medium text-slate-300'>
-                                    3
-                                </span>
-                                <span>
-                                    See what you need on remaining items to hit
-                                    your target grade
-                                </span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </main>
-
-            <footer className='border-t border-slate-800/50 py-6 text-center text-sm text-slate-500'>
-                <a
-                    href='https://buymeacoffee.com/vincelapore'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='inline-flex items-center gap-2 transition-colors hover:text-slate-300'
-                >
-                    Buy Me a Coffee ☕
-                </a>
-            </footer>
+  return (
+    <GmShell variant="marketing">
+      <div className="gm-hero">
+        <div className="gm-badge">
+          <div className="gm-badge-dot" />
+          Now supporting UQ — UniMelb coming soon
         </div>
-    );
+        <h1 className="gm-h1">
+          Finally know
+          <br />
+          <em>where you stand.</em>
+        </h1>
+        <p className="gm-sub">
+          Track your grades, assessments, and GPA — with your university&apos;s
+          courses already loaded. No spreadsheets. No guessing.
+        </p>
+        <div className="gm-cta-row">
+          <LandingGoogleButton />
+          <GmButtonAnchor variant="ghost" href="#how-it-works">
+            See how it works
+          </GmButtonAnchor>
+        </div>
+        <p className="gm-unis">
+          Currently supporting UQ · QUT coming soon · UniMelb coming soon
+        </p>
+      </div>
+
+      <div className="gm-dashboard">
+        <div className="gm-dash-header">
+          <span className="gm-dash-title">
+            Semester 1, 2026 — Bachelor of Computer Science
+          </span>
+          <span className="gm-gpa-pill">GPA 5.8</span>
+        </div>
+        <div className="gm-stats">
+          <div className="gm-stat">
+            <div className="gm-stat-label">Courses</div>
+            <div className="gm-stat-value">4</div>
+          </div>
+          <div className="gm-stat">
+            <div className="gm-stat-label">Assessments due</div>
+            <div className="gm-stat-value amber">3</div>
+          </div>
+          <div className="gm-stat">
+            <div className="gm-stat-label">Degree progress</div>
+            <div className="gm-stat-value green">43%</div>
+          </div>
+        </div>
+        <div className="gm-courses">
+          <div className="gm-course">
+            <div>
+              <div className="gm-course-code">COMP3400</div>
+              <div className="gm-course-name">Functional Programming</div>
+            </div>
+            <div className="gm-course-bar-wrap">
+              <div className="gm-bar">
+                <div className="gm-bar-fill green" style={{ width: "72%" }} />
+              </div>
+              <span className="gm-course-need">need 61% on final</span>
+            </div>
+            <div className="gm-course-grade" style={{ color: "#1D9E75" }}>
+              72%
+            </div>
+          </div>
+          <div className="gm-course">
+            <div>
+              <div className="gm-course-code">CSSE3100</div>
+              <div className="gm-course-name">Reasoning About Programs</div>
+            </div>
+            <div className="gm-course-bar-wrap">
+              <div className="gm-bar">
+                <div className="gm-bar-fill amber" style={{ width: "58%" }} />
+              </div>
+              <span className="gm-course-need">need 74% on final</span>
+            </div>
+            <div className="gm-course-grade" style={{ color: "#BA7517" }}>
+              58%
+            </div>
+          </div>
+          <div className="gm-course">
+            <div>
+              <div className="gm-course-code">DRAM2030</div>
+              <div className="gm-course-name">
+                Theatre History &amp; Practice
+              </div>
+            </div>
+            <div className="gm-course-bar-wrap">
+              <div className="gm-bar">
+                <div className="gm-bar-fill blue" style={{ width: "85%" }} />
+              </div>
+              <span className="gm-course-need">on track</span>
+            </div>
+            <div className="gm-course-grade" style={{ color: "#378ADD" }}>
+              85%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr className="gm-divider" />
+
+      <div className="gm-features" id="how-it-works">
+        <div className="gm-feat-label">What it does</div>
+        <h2 className="gm-feat-heading">
+          Everything in one place,
+          <br />
+          nothing to set up.
+        </h2>
+        <div className="gm-feat-grid">
+          <div className="gm-feat-card">
+            <div className="gm-feat-icon">
+              <svg viewBox="0 0 16 16" fill="none">
+                <rect x={2} y={2} width={5} height={5} rx={1} fill="#1D9E75" />
+                <rect x={9} y={2} width={5} height={5} rx={1} fill="#9FE1CB" />
+                <rect x={2} y={9} width={5} height={5} rx={1} fill="#9FE1CB" />
+                <rect x={9} y={9} width={5} height={5} rx={1} fill="#5DCAA5" />
+              </svg>
+            </div>
+            <div className="gm-feat-title">Courses auto-loaded</div>
+            <div className="gm-feat-desc">
+              Pick your course code and every assessment, weighting, and due
+              date appears instantly.
+            </div>
+          </div>
+          <div className="gm-feat-card">
+            <div className="gm-feat-icon">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M3 12 L8 4 L13 9"
+                  stroke="#1D9E75"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx={13} cy={9} r={2} fill="#1D9E75" />
+              </svg>
+            </div>
+            <div className="gm-feat-title">Know what you need</div>
+            <div className="gm-feat-desc">
+              See exactly what score you need on each remaining assessment to
+              hit your target grade.
+            </div>
+          </div>
+          <div className="gm-feat-card">
+            <div className="gm-feat-icon">
+              <svg viewBox="0 0 16 16" fill="none">
+                <circle
+                  cx={8}
+                  cy={8}
+                  r="5.5"
+                  stroke="#1D9E75"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M8 5v3l2 2"
+                  stroke="#1D9E75"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="gm-feat-title">Track your GPA</div>
+            <div className="gm-feat-desc">
+              Your GPA updates in real time as you enter grades. See your
+              semester and cumulative average at a glance.
+            </div>
+          </div>
+          <div className="gm-feat-card">
+            <div className="gm-feat-icon">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 13h12M4 13V8m4 5V5m4 8V9"
+                  stroke="#1D9E75"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="gm-feat-title">Degree progress</div>
+            <div className="gm-feat-desc">
+              See how far through your degree you are, and whether you&apos;re
+              on track for honours or grad programs.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr className="gm-divider" />
+
+      <div className="gm-pricing" id="pricing">
+        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <div className="gm-feat-label" style={{ textAlign: "center" }}>
+            Pricing
+          </div>
+          <h2 className="gm-feat-heading" style={{ margin: 0 }}>
+            Simple. No gotchas.
+          </h2>
+        </div>
+        <div className="gm-price-grid">
+          <div className="gm-price-card">
+            <div className="gm-price-tier">Free</div>
+            <div className="gm-price-amount">$0</div>
+            <div className="gm-price-cadence">forever</div>
+            <ul className="gm-price-features">
+              <li>
+                <span className="gm-check">✓</span> Current semester
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Up to 3 courses
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Grade calculator
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Assessment due dates
+              </li>
+            </ul>
+            <GmButtonLink className="gm-price-btn" href="/auth/login">
+              Get started
+            </GmButtonLink>
+          </div>
+
+          <div className="gm-price-card featured">
+            <div className="gm-price-badge">One plan · Annual</div>
+            <div className="gm-price-tier">Pro</div>
+            <div className="gm-price-row">
+              <div className="gm-price-amount">
+                <span style={{ textDecoration: "line-through", opacity: 0.55 }}>
+                  $2.42
+                </span>{" "}
+                <span style={{ color: "#1D9E75" }}>$1.60</span>
+              </div>
+              <div className="gm-price-suffix">/mo</div>
+            </div>
+            <div className="gm-price-secondary">
+              <span style={{ textDecoration: "line-through", opacity: 0.65 }}>
+                $29/year
+              </span>{" "}
+              → <strong>$19/year</strong> with code <strong>UQYEEHAW</strong>{" "}
+              (first 100).
+            </div>
+            <ul className="gm-price-features">
+              <li>
+                <span className="gm-check">✓</span> Everything in Free
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Unlimited courses &amp;
+                semesters
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Overall view + Hell Week
+                calendar
+              </li>
+              <li>
+                <span className="gm-check">✓</span> Manage billing in-app
+                (Stripe portal)
+              </li>
+            </ul>
+            <GmButtonLink className="gm-price-btn featured" href="/auth/login">
+              Upgrade to Pro
+            </GmButtonLink>
+          </div>
+        </div>
+      </div>
+    </GmShell>
+  );
 }

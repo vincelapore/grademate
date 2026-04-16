@@ -11,15 +11,19 @@
     "backfill:semester": "tsx scripts/backfill-semester.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/ssr": "^0.10.0",
+    "@supabase/supabase-js": "^2.101.1",
     "@upstash/redis": "^1.36.2",
     "@vercel/analytics": "^1.6.1",
     "cheerio": "^1.2.0",
+    "lucide-react": "^1.6.0",
     "lz-string": "^1.5.0",
     "next": "16.1.6",
+    "posthog-js": "^1.368.2",
+    "posthog-node": "^5.29.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "stripe": "^17.7.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

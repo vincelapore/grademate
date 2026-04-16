@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
     getAnalyticsCounts,
     getScrapeCacheCount,
+    getScrapeCacheSemesterBreakdown,
     getRecentScrapeErrors,
     getRecentDeliveryErrors,
     incrAnalytics,
@@ -24,17 +25,26 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
-        const [counts, scrapeCache, recentScrapeErrors, recentDeliveryErrors] =
-            await Promise.all([
-                getAnalyticsCounts(),
-                getScrapeCacheCount(50000),
-                getRecentScrapeErrors(),
-                getRecentDeliveryErrors(),
-            ]);
+        const [
+            counts,
+            scrapeCache,
+            scrapeBreakdown,
+            recentScrapeErrors,
+            recentDeliveryErrors
+        ] = await Promise.all([
+            getAnalyticsCounts(),
+            getScrapeCacheCount(50000),
+            getScrapeCacheSemesterBreakdown(50000),
+            getRecentScrapeErrors(),
+            getRecentDeliveryErrors()
+        ]);
         return NextResponse.json({
             ...counts,
             coursesCached: scrapeCache.count,
             coursesCachedCapped: scrapeCache.capped,
+            coursesCachedByYearSemester: scrapeBreakdown.breakdown,
+            coursesCachedByYearSemesterTotal: scrapeBreakdown.totalUnique,
+            coursesCachedByYearSemesterCapped: scrapeBreakdown.capped,
             recentScrapeErrors,
             recentDeliveryErrors,
         });

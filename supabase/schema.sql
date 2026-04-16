@@ -1,6 +1,31 @@
 -- UQGrades Supabase Schema
 -- Run this in the Supabase SQL Editor (Dashboard > SQL Editor)
 
+-- ============================================================
+-- Grademate dashboard schema additions
+-- ============================================================
+--
+-- Course profile link + institution (run in SQL Editor if not already applied):
+-- ALTER TABLE public.subject_enrolments
+--   ADD COLUMN IF NOT EXISTS profile_url text,
+--   ADD COLUMN IF NOT EXISTS university text;
+-- Pro gating uses a simple plan field on `public.users`.
+-- `free` is default; set to `pro` later via Stripe/webhooks.
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free'
+CHECK (plan IN ('free', 'pro'));
+
+-- Stripe billing (see migration: 20260413120000_add_users_stripe_billing.sql)
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
+
+-- Secret URL token for read-only iCal subscription (/api/calendar/[token].ics)
+ALTER TABLE public.users
+-- NOTE: calendar_token is managed via `supabase/migrations/*` so it can be applied
+-- with `supabase db push`. See migration: 20260407150900_add_users_calendar_token.sql.
+
 -- User's saved courses/semesters
 CREATE TABLE saved_courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

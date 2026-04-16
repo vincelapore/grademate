@@ -444,7 +444,7 @@ export async function fetchCourseAssessment(
           console.log("[Scraper] Found pass/fail weight (heuristic)");
         } else {
           // Look for percentage or numeric weight
-          let weightCell =
+          const weightCell =
             textCells.find((t) => t.includes("%")) ??
             textCells.find((t) => !Number.isNaN(parseFloat(t)));
           if (weightCell) {
