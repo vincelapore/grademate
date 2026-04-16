@@ -39,6 +39,7 @@ export function AssessmentCalculatorInline({
     (s, r) => s + (typeof r.weight === "number" ? r.weight : 0),
     0,
   );
+  const weightsBalanced = Math.abs(weightSumRaw - courseWt) < 0.05;
 
   const partsMath = (() => {
     const totalWeightRaw = weights.reduce((s, w) => s + (w > 0 ? w : 0), 0);
@@ -224,7 +225,7 @@ export function AssessmentCalculatorInline({
               </div>
             );
           })}
-          {weightSumRaw !== courseWt ? (
+          {!weightsBalanced ? (
             <div className="gm-dash-parts-warn" role="status">
               Weights should add to {formatMonoValue(courseWt)}% (currently {formatMonoValue(weightSumRaw)}%)
             </div>

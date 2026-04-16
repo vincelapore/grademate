@@ -65,6 +65,7 @@ export function AssessmentCalculatorModal({
     (s, r) => s + (typeof r.weight === "number" ? r.weight : 0),
     0
   );
+  const weightsBalanced = Math.abs(weightSumRaw - courseWt) < 0.05;
   const subWeighted: WeightedMark[] = (() => {
     if (weightSumRaw <= 0) {
       const n = rows.length;
@@ -218,7 +219,7 @@ export function AssessmentCalculatorModal({
               </p>
               <p
                 className={`text-xs font-medium ${
-                  weightSumRaw === courseWt
+                  weightsBalanced
                     ? "text-slate-500"
                     : "text-amber-400/90"
                 }`}
