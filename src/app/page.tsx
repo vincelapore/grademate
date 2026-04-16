@@ -85,7 +85,9 @@ export default function Home() {
           <div className="gm-course">
             <div>
               <div className="gm-course-code">DRAM2030</div>
-              <div className="gm-course-name">Theatre History &amp; Practice</div>
+              <div className="gm-course-name">
+                Theatre History &amp; Practice
+              </div>
             </div>
             <div className="gm-course-bar-wrap">
               <div className="gm-bar">
@@ -121,8 +123,8 @@ export default function Home() {
             </div>
             <div className="gm-feat-title">Courses auto-loaded</div>
             <div className="gm-feat-desc">
-              Pick your course code and every assessment, weighting, and due date
-              appears instantly.
+              Pick your course code and every assessment, weighting, and due
+              date appears instantly.
             </div>
           </div>
           <div className="gm-feat-card">
@@ -140,8 +142,8 @@ export default function Home() {
             </div>
             <div className="gm-feat-title">Know what you need</div>
             <div className="gm-feat-desc">
-              See exactly what score you need on each remaining assessment to hit
-              your target grade.
+              See exactly what score you need on each remaining assessment to
+              hit your target grade.
             </div>
           </div>
           <div className="gm-feat-card">
@@ -164,8 +166,8 @@ export default function Home() {
             </div>
             <div className="gm-feat-title">Track your GPA</div>
             <div className="gm-feat-desc">
-              Your GPA updates in real time as you enter grades. See your semester
-              and cumulative average at a glance.
+              Your GPA updates in real time as you enter grades. See your
+              semester and cumulative average at a glance.
             </div>
           </div>
           <div className="gm-feat-card">
@@ -181,8 +183,8 @@ export default function Home() {
             </div>
             <div className="gm-feat-title">Degree progress</div>
             <div className="gm-feat-desc">
-              See how far through your degree you are, and whether you&apos;re on
-              track for honours or grad programs.
+              See how far through your degree you are, and whether you&apos;re
+              on track for honours or grad programs.
             </div>
           </div>
         </div>
@@ -190,7 +192,7 @@ export default function Home() {
 
       <hr className="gm-divider" />
 
-      {/* <div className="gm-pricing" id="pricing">
+      <div className="gm-pricing" id="pricing">
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <div className="gm-feat-label" style={{ textAlign: "center" }}>
             Pricing
@@ -222,107 +224,45 @@ export default function Home() {
               Get started
             </GmButtonLink>
           </div>
+
           <div className="gm-price-card featured">
-            <div className="gm-price-badge">Founding rate — limited time</div>
-            <div className="gm-price-tier">FOUNDING ANNUAL</div>
+            <div className="gm-price-badge">One plan · Annual</div>
+            <div className="gm-price-tier">Pro</div>
             <div className="gm-price-row">
-              <div className="gm-price-amount">$1.58</div>
+              <div className="gm-price-amount">
+                <span style={{ textDecoration: "line-through", opacity: 0.55 }}>
+                  $2.42
+                </span>{" "}
+                <span style={{ color: "#1D9E75" }}>$1.60</span>
+              </div>
               <div className="gm-price-suffix">/mo</div>
             </div>
-            <div className="gm-price-secondary">billed once at $19/year</div>
-            <div className="gm-price-save">Save 69% vs monthly</div>
+            <div className="gm-price-secondary">
+              <span style={{ textDecoration: "line-through", opacity: 0.65 }}>
+                $29/year
+              </span>{" "}
+              → <strong>$19/year</strong> with code <strong>UQYEEHAW</strong>{" "}
+              (first 100).
+            </div>
             <ul className="gm-price-features">
               <li>
                 <span className="gm-check">✓</span> Everything in Free
               </li>
               <li>
-                <span className="gm-check">✓</span> Unlimited semesters
+                <span className="gm-check">✓</span> Unlimited courses &amp; semesters
               </li>
               <li>
-                <span className="gm-check">✓</span> Degree progress tracking
+                <span className="gm-check">✓</span> Overall view + Hell Week calendar
               </li>
               <li>
-                <span className="gm-check">✓</span> GPA history
-              </li>
-              <li>
-                <span className="gm-check">✓</span> What-if scenarios
+                <span className="gm-check">✓</span> Manage billing in-app (Stripe portal)
               </li>
             </ul>
             <GmButtonLink className="gm-price-btn featured" href="/auth/login">
-              Get Pro
-            </GmButtonLink>
-          </div>
-          <div className="gm-price-card">
-            <div className="gm-price-badge subtle">Most popular</div>
-            <div className="gm-price-tier">ANNUAL</div>
-            <div className="gm-price-row">
-              <div className="gm-price-amount">$3.25</div>
-              <div className="gm-price-suffix">/mo</div>
-            </div>
-            <div className="gm-price-secondary">billed once at $39/year</div>
-            <div className="gm-price-save">Save 35% vs monthly</div>
-            <ul className="gm-price-features">
-              <li>
-                <span className="gm-check">✓</span> Everything in Free
-              </li>
-              <li>
-                <span className="gm-check">✓</span> Unlimited semesters
-              </li>
-              <li>
-                <span className="gm-check">✓</span> Degree progress tracking
-              </li>
-              <li>
-                <span className="gm-check">✓</span> GPA history
-              </li>
-              <li>
-                <span className="gm-check">✓</span> What-if scenarios
-              </li>
-            </ul>
-            <GmButtonLink className="gm-price-btn" href="/auth/login">
-              Get Pro
-            </GmButtonLink>
-          </div>
-          <div className="gm-price-card">
-            <div className="gm-price-tier">MONTHLY</div>
-            <div className="gm-price-row">
-              <div className="gm-price-amount">$4.99</div>
-              <div className="gm-price-suffix">/mo</div>
-            </div>
-            <div className="gm-price-secondary">billed monthly, cancel anytime</div>
-            <ul className="gm-price-features">
-              <li>
-                <span className="gm-check">✓</span> Everything in Free
-              </li>
-              <li>
-                <span className="gm-check">✓</span> Unlimited semesters
-              </li>
-              <li>
-                <span className="gm-check">✓</span> Degree progress tracking
-              </li>
-              <li>
-                <span className="gm-check">✓</span> GPA history
-              </li>
-              <li>
-                <span className="gm-check">✓</span> What-if scenarios
-              </li>
-            </ul>
-            <GmButtonLink className="gm-price-btn" href="/auth/login">
-              Get Pro
+              Upgrade to Pro
             </GmButtonLink>
           </div>
         </div>
-      </div>
-      */}
-
-      <div className="gm-landing-disclaimer">
-        <p>
-          Not affiliated with UQ. All data is scraped from UQ course profiles.
-          Please verify information on the official UQ website. This tool is for
-          convenience only and may contain errors. UQ Grades is not responsible
-          for your grades, missed hurdles and deadlines, or that Netflix binge
-          two days before the final.
-        </p>
-        <p>Report bugs, compliments, or feature ideas.</p>
       </div>
     </GmShell>
   );

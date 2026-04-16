@@ -29,7 +29,7 @@ export function DashboardHeader({
   const mailto = (() => {
     const subject = "GradeMate feedback";
     const body = ["Hello,", " "].join("\n");
-    return `mailto:vincemlapore@gmail.com?subject=${encodeURIComponent(
+    return `mailto:hello@grademate.dev?subject=${encodeURIComponent(
       subject,
     )}&body=${encodeURIComponent(body)}`;
   })();
@@ -39,7 +39,10 @@ export function DashboardHeader({
       <header className="gm-dash-header-bar">
         <div className="gm-dash-header-left">
           <GmLogo href="/dashboard" />
-          <nav className="gm-dash-tabs gm-dash-desktop-only" aria-label="Dashboard views">
+          <nav
+            className="gm-dash-tabs gm-dash-desktop-only"
+            aria-label="Dashboard views"
+          >
             <Link
               href="/dashboard"
               className={
@@ -134,9 +137,17 @@ export function DashboardHeader({
         </div>
 
         {menuOpen ? (
-          <div className="gm-dash-mobile-menu-wrap" role="dialog" aria-label="Menu">
+          <div
+            className="gm-dash-mobile-menu-wrap"
+            role="dialog"
+            aria-label="Menu"
+          >
             <div className="gm-dash-menu">
-              <Link className="gm-dash-menu-item" href="/dashboard" onClick={() => setMenuOpen(false)}>
+              <Link
+                className="gm-dash-menu-item"
+                href="/dashboard"
+                onClick={() => setMenuOpen(false)}
+              >
                 Home
               </Link>
               <Link
@@ -178,7 +189,11 @@ export function DashboardHeader({
                   Upgrade
                 </button>
               ) : null}
-              <a className="gm-dash-menu-item" href={mailto} onClick={() => setMenuOpen(false)}>
+              <a
+                className="gm-dash-menu-item"
+                href={mailto}
+                onClick={() => setMenuOpen(false)}
+              >
                 Report bug
               </a>
               <Link
