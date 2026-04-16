@@ -88,56 +88,21 @@ export async function GET(request: Request) {
     }
   }
 
-  // Decide where to send the user:
-  // - Pro users -> /dashboard
-  // - Everyone else -> /
-  //
-  // Your request mentions `profiles`, but this repo currently stores plan state in `users.plan`.
-  // We still attempt a `profiles` lookup first and fall back to `users.plan` so it won't break
-  // if `profiles` doesn't exist in a local/prod environment.
-  let isPro = false;
+  let redirectUrl = `${origin}/auth/login?error=Could not authenticate`;
   if (user?.id) {
-    try {
-      const { data: profilesRow, error: profilesErr } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+    const { data: semesters } = await supabase
+      .from("semesters")
+      .select("id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-      if (!profilesErr && profilesRow) {
-        const anyRow = profilesRow as Record<string, unknown>;
-        const plan =
-          (anyRow.plan as string | null | undefined) ??
-          (anyRow.subscription_plan as string | null | undefined);
-        const status =
-          (anyRow.subscription_status as string | null | undefined) ??
-          (anyRow.status as string | null | undefined);
-
-        const activeFlag =
-          anyRow.active_subscription === true ||
-          anyRow.subscription_active === true ||
-          anyRow.active === true;
-
-        if (activeFlag) isPro = true;
-        if (typeof plan === "string" && plan.toLowerCase() === "pro") isPro = true;
-        if (typeof status === "string" && status.toLowerCase() === "active")
-          isPro = true;
-      }
-    } catch {
-      // ignore
-    }
-
-    if (!isPro) {
-      const { data: userRow } = await supabase
-        .from("users")
-        .select("plan")
-        .eq("id", user.id)
-        .maybeSingle();
-      isPro = userRow?.plan === "pro";
-    }
+    redirectUrl =
+      !semesters || semesters.length === 0
+        ? `${origin}/onboarding`
+        : `${origin}/dashboard`;
   }
 
-  const redirectUrl = isPro ? `${origin}/dashboard` : `${origin}/`;
   const response = NextResponse.redirect(redirectUrl);
 
   // Apply cookies captured during `exchangeCodeForSession`.

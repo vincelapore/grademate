@@ -6,13 +6,21 @@ type RowInput = {
   weight?: number;
 };
 
-/** Split integer `total` across `n` parts that sum exactly to `total`. */
-function splitIntegerTotal(total: number, parts: number): number[] {
+function roundToTenth(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** Split `total` across `n` parts in 0.1 increments that sum exactly to `total`. */
+function splitTenthTotal(total: number, parts: number): number[] {
   if (parts <= 0) return [];
   if (total <= 0) return Array(parts).fill(0);
-  const base = Math.floor(total / parts);
-  const remainder = total - base * parts;
-  return Array.from({ length: parts }, (_, i) => base + (i < remainder ? 1 : 0));
+  const totalTenths = Math.round(total * 10);
+  const baseTenths = Math.floor(totalTenths / parts);
+  const remainderTenths = totalTenths - baseTenths * parts;
+  return Array.from(
+    { length: parts },
+    (_, i) => (baseTenths + (i < remainderTenths ? 1 : 0)) / 10,
+  );
 }
 
 /**
@@ -22,14 +30,14 @@ export function equalSplitAssessmentWeight(
   assessmentCourseWeight: number,
   n: number
 ): number[] {
-  const total = Math.max(0, Math.round(assessmentCourseWeight));
+  const total = Math.max(0, roundToTenth(assessmentCourseWeight));
   if (n <= 0) return [];
   if (n === 1) return [total];
-  return splitIntegerTotal(total, n);
+  return splitTenthTotal(total, n);
 }
 
 /**
- * Set one row's weight (course %); remainder is split across other rows as integers.
+ * Set one row's weight (course %); remainder is split across other rows in 0.1 increments.
  */
 export function setWeightAt(
   rows: SubAssessmentRow[],
@@ -37,7 +45,7 @@ export function setWeightAt(
   rawWeight: number,
   assessmentCourseWeight: number
 ): SubAssessmentRow[] {
-  const total = Math.max(0, Math.round(assessmentCourseWeight));
+  const total = Math.max(0, roundToTenth(assessmentCourseWeight));
   const n = rows.length;
   const otherCount = n - 1;
   if (otherCount <= 0) {
@@ -45,10 +53,10 @@ export function setWeightAt(
       i === idx ? { ...r, weight: total } : r
     );
   }
-  let W = Math.round(rawWeight);
+  let W = roundToTenth(rawWeight);
   W = Math.min(total, Math.max(0, W));
-  const rem = total - W;
-  const parts = splitIntegerTotal(rem, otherCount);
+  const rem = roundToTenth(total - W);
+  const parts = splitTenthTotal(rem, otherCount);
   let pi = 0;
   return rows.map((r, i) => {
     if (i === idx) return { ...r, weight: W };
@@ -64,7 +72,7 @@ export function ensureSubAssessmentRows(
   rows: RowInput[],
   assessmentCourseWeight: number
 ): SubAssessmentRow[] {
-  const total = Math.max(0, Math.round(assessmentCourseWeight));
+  const total = Math.max(0, roundToTenth(assessmentCourseWeight));
   if (rows.length === 0) {
     return [{ name: "Part 1", mark: null, weight: total }];
   }
@@ -74,7 +82,7 @@ export function ensureSubAssessmentRows(
   const sum = hasAll ? rows.reduce((s, r) => s + r.weight!, 0) : 0;
 
   // Already matches this assessment's course weight
-  if (hasAll && sum > 0 && Math.abs(sum - total) < 0.5) {
+  if (hasAll && sum > 0 && Math.abs(sum - total) < 0.05) {
     if (Math.abs(sum - total) < 0.01) {
       return rows.map((r) => ({
         name: r.name,
@@ -85,32 +93,32 @@ export function ensureSubAssessmentRows(
     const scaled = rows.map((r) => ({
       name: r.name,
       mark: r.mark,
-      weight: Math.round((r.weight! * total) / sum)
+      weight: roundToTenth((r.weight! * total) / sum)
     }));
     const s = scaled.reduce((a, r) => a + r.weight, 0);
-    if (s !== total && scaled.length > 0) {
+    if (Math.abs(s - total) >= 0.01 && scaled.length > 0) {
       const last = scaled.length - 1;
       scaled[last] = {
         ...scaled[last]!,
-        weight: scaled[last]!.weight + (total - s)
+        weight: roundToTenth(scaled[last]!.weight + (total - s))
       };
     }
     return scaled;
   }
 
   // Legacy: internal shares summing to ~100 → scale to course weight
-  if (hasAll && sum > 0 && Math.abs(sum - 100) < 0.5) {
+  if (hasAll && sum > 0 && Math.abs(sum - 100) < 0.05) {
     const scaled = rows.map((r) => ({
       name: r.name,
       mark: r.mark,
-      weight: Math.round((r.weight! * total) / sum)
+      weight: roundToTenth((r.weight! * total) / sum)
     }));
     const s = scaled.reduce((a, r) => a + r.weight, 0);
-    if (s !== total && scaled.length > 0) {
+    if (Math.abs(s - total) >= 0.01 && scaled.length > 0) {
       const last = scaled.length - 1;
       scaled[last] = {
         ...scaled[last]!,
-        weight: scaled[last]!.weight + (total - s)
+        weight: roundToTenth(scaled[last]!.weight + (total - s))
       };
     }
     return scaled;

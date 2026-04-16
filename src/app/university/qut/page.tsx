@@ -1192,7 +1192,7 @@ function HomeContent() {
                                       const course = state.courses[idx];
                                       const assessmentCourseWeight =
                                         typeof item.weight === "number"
-                                          ? Math.round(item.weight)
+                                          ? item.weight
                                           : 0;
                                       const raw =
                                         course?.subAssessments?.[i]?.rows;
@@ -1729,7 +1729,7 @@ function HomeContent() {
               ? null
               : (courseFillerMarks[itemIdx] ?? null);
           const assessmentCourseWeight =
-            typeof it.weight === "number" ? Math.round(it.weight) : 0;
+            typeof it.weight === "number" ? it.weight : 0;
           const rows: SubAssessmentRow[] = ensureSubAssessmentRows(
             c.subAssessments?.[itemIdx]?.rows?.length
               ? c.subAssessments[itemIdx]!.rows.map((r) => ({

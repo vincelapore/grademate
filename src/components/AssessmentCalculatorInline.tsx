@@ -4,6 +4,7 @@ import { parseMarkToPercentage } from "@/lib/grades";
 import { isValidMarkInput } from "@/lib/mark-input";
 import { setWeightAt, withEqualWeightsFromRows } from "@/lib/sub-assessment";
 import type { SubAssessmentRow } from "@/lib/state";
+import { formatMonoValue } from "@/components/utils/format";
 
 type Props = {
   assessmentName: string;
@@ -32,7 +33,7 @@ export function AssessmentCalculatorInline({
   rows,
   onRowsChange,
 }: Props) {
-  const courseWt = Math.max(0, Math.round(assessmentCourseWeightPercent));
+  const courseWt = Math.max(0, Number(assessmentCourseWeightPercent.toFixed(1)));
   const weights = rows.map((r) => (typeof r.weight === "number" ? r.weight : 0));
   const weightSumRaw = rows.reduce(
     (s, r) => s + (typeof r.weight === "number" ? r.weight : 0),
@@ -176,9 +177,10 @@ export function AssessmentCalculatorInline({
                 />
                 <input
                   type="number"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   min={0}
                   max={courseWt}
+                  step={0.1}
                   value={w}
                   onChange={(e) => {
                     const v = Number(e.target.value);
@@ -224,7 +226,7 @@ export function AssessmentCalculatorInline({
           })}
           {weightSumRaw !== courseWt ? (
             <div className="gm-dash-parts-warn" role="status">
-              Weights should add to {courseWt}% (currently {weightSumRaw}%)
+              Weights should add to {formatMonoValue(courseWt)}% (currently {formatMonoValue(weightSumRaw)}%)
             </div>
           ) : (
             <div className="gm-dash-parts-ok" aria-hidden />

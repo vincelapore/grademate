@@ -9,6 +9,7 @@ import {
   normalizeProfileUrlForStorage,
   normalizeUniversityCode,
 } from "@/lib/profile-url";
+import { formatMonoValue } from "@/components/utils/format";
 
 type CourseEditAssessment = {
   id: string;
@@ -157,7 +158,7 @@ export function CourseEditModal({
       {
         clientKey: globalThis.crypto?.randomUUID?.() ?? `new-${Date.now()}`,
         assessment_name: "",
-        weighting: "10",
+        weighting: "10.0",
         due_date: "",
         is_hurdle: false,
         hurdle_threshold: "",
@@ -477,7 +478,7 @@ export function CourseEditModal({
               <div className="gm-dash-weight-meter-caption">
                 <span className="font-semibold tabular-nums text-[var(--color-text-primary)]">
                   {Number.isFinite(weightSumPreview)
-                    ? weightSumPreview.toFixed(1)
+                    ? formatMonoValue(weightSumPreview)
                     : "—"}
                   %
                 </span>
@@ -580,7 +581,8 @@ export function CourseEditModal({
                           <input
                             type="number"
                             min={0.1}
-                            step={0.5}
+                            step={0.1}
+                            inputMode="decimal"
                             value={row.weighting}
                             onChange={(e) =>
                               setEditRows((rows) =>

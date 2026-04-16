@@ -23,6 +23,7 @@ import {
 } from "@/lib/grades";
 import { ensureSubAssessmentRows } from "@/lib/sub-assessment";
 import type { SubAssessmentRow } from "@/lib/state";
+import { formatMonoValue } from "@/components/utils/format";
 
 export type AssessmentSeriesSlot = "full" | "left" | "right";
 
@@ -1294,7 +1295,7 @@ export function CourseCard({
                         data-label="Weight"
                         className="gm-dash-td-num gm-dash-td-muted"
                       >
-                        {a.weighting}%
+                        {formatMonoValue(a.weighting)}%
                       </td>
                       <td
                         data-label="Due"
@@ -1579,7 +1580,7 @@ export function CourseCard({
                               computed.fillerMarks[i] ?? null;
                             const assessmentCourseWeight =
                               typeof a.weighting === "number"
-                                ? Math.round(a.weighting)
+                                ? a.weighting
                                 : 0;
                             const rows: SubAssessmentRow[] =
                               ensureSubAssessmentRows(

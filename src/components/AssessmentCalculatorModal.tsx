@@ -13,6 +13,7 @@ import {
   withEqualWeightsFromRows
 } from "@/lib/sub-assessment";
 import type { SubAssessmentRow } from "@/lib/state";
+import { formatMonoValue } from "@/components/utils/format";
 
 type Props = {
   open: boolean;
@@ -59,7 +60,7 @@ export function AssessmentCalculatorModal({
 }: Props) {
   if (!open) return null;
 
-  const courseWt = Math.max(0, Math.round(assessmentCourseWeightPercent));
+  const courseWt = Math.max(0, Number(assessmentCourseWeightPercent.toFixed(1)));
   const weightSumRaw = rows.reduce(
     (s, r) => s + (typeof r.weight === "number" ? r.weight : 0),
     0
@@ -172,7 +173,7 @@ export function AssessmentCalculatorModal({
             <p className="text-xs text-slate-500">{courseCode}</p>
             <h2 className="text-lg font-bold text-slate-50">{assessmentName}</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Overall = Mark cell · parts share {courseWt}% of course
+              Overall = Mark cell · parts share {formatMonoValue(courseWt)}% of course
             </p>
           </div>
 
@@ -222,7 +223,7 @@ export function AssessmentCalculatorModal({
                     : "text-amber-400/90"
                 }`}
               >
-                Weights: {weightSumRaw}% / {courseWt}%
+                Weights: {formatMonoValue(weightSumRaw)}% / {formatMonoValue(courseWt)}%
               </p>
             </div>
             <div className="space-y-2">
@@ -260,6 +261,7 @@ export function AssessmentCalculatorModal({
                           type="number"
                           min={0}
                           max={courseWt}
+                          step={0.1}
                           value={w}
                           onChange={(e) => {
                             const v = Number(e.target.value);
