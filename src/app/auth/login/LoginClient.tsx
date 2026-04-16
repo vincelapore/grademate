@@ -18,12 +18,11 @@ function LoginContent() {
     setLoading(true);
     posthog.capture("login_started", { provider: "google" });
 
-    const next = searchParams.get("next") ?? "/dashboard";
     const origin = window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${origin}/auth/callback`,
       },
     });
 

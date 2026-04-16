@@ -13,7 +13,7 @@ export function LandingGoogleButton() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`,
+        redirectTo: `${origin}/auth/callback`,
       },
     });
   }
