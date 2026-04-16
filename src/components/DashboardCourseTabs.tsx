@@ -18,6 +18,9 @@ type AssessmentPreview = {
   sub_assessments?: {
     rows: Array<{ name: string; mark: string | null; weight?: number }>;
   } | null;
+  is_hurdle?: boolean | null;
+  hurdle_threshold?: number | null;
+  hurdle_requirements?: string | null;
 };
 
 type Enrolment = {
@@ -582,12 +585,8 @@ export function DashboardCourseTabs({
             solidColor: string | null;
             fadedColor: string;
           }> = [];
-          const rightPieces: Array<{
-            key: string;
-            widthPct: number;
-            kind: "unachievable";
-            tint: string;
-          }> = [];
+          let unachievableWidthPct = 0;
+          let unachievableTint: string | null = null;
 
           segmentsWithPos.forEach((s) => {
             const denom = barTotal > 0 ? barTotal : 1;
@@ -610,14 +609,28 @@ export function DashboardCourseTabs({
               });
             }
             if (s.unachievablePoints > 0) {
-              rightPieces.push({
-                key: `${s.id}-unach`,
-                widthPct: (s.unachievablePoints / denom) * 100,
-                kind: "unachievable",
-                tint: s.solidColor ?? "#0f172a",
-              });
+              unachievableWidthPct += (s.unachievablePoints / denom) * 100;
+              if (!unachievableTint) {
+                unachievableTint = s.solidColor ?? "#0f172a";
+              }
             }
           });
+          const rightPieces: Array<{
+            key: string;
+            widthPct: number;
+            kind: "unachievable";
+            tint: string;
+          }> =
+            unachievableWidthPct > 0
+              ? [
+                  {
+                    key: "unach",
+                    widthPct: unachievableWidthPct,
+                    kind: "unachievable",
+                    tint: unachievableTint ?? "#0f172a",
+                  },
+                ]
+              : [];
           return (
             <button
               key={e.id}

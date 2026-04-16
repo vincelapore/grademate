@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  computeCourseSummary,
   computeSemesterCurrentAndOverall,
-  computeSemesterGpaFromEnrolments,
   countAssessmentsDueThisWeek,
 } from "@/lib/calculations/gpa";
+import { uqPercentToGradePoint } from "@/lib/calculations/grades";
 import { parseMarkToPercentage } from "@/lib/grades";
 import HellWeekCalendar, {
   type HellWeekAssessment,
@@ -104,7 +105,46 @@ export function DashboardGradeSummaryLive({
     return computeSemesterCurrentAndOverall(courseAssessments);
   }, [local]);
 
-  const gpa = useMemo(() => computeSemesterGpaFromEnrolments(local), [local]);
+  const wam = useMemo(() => {
+    const rows = local
+      .map((e) => {
+        const summary = computeCourseSummary({
+          credit_points: e.credit_points,
+          target_grade: e.target_grade,
+          assessments: (e.assessment_results ?? []).map((a) => ({
+            weighting: a.weighting,
+            mark: a.mark,
+            due_date: a.due_date,
+            sub_assessments: a.sub_assessments ?? null,
+          })),
+        });
+        return {
+          cp: typeof e.credit_points === "number" && Number.isFinite(e.credit_points) && e.credit_points > 0 ? e.credit_points : 0,
+          pct: summary.completedAveragePercent,
+        };
+      })
+      .filter((r) => typeof r.pct === "number" && Number.isFinite(r.pct));
+
+    if (!rows.length) return null;
+
+    const hasValidCp = rows.some((r) => r.cp > 0);
+    const denom = hasValidCp
+      ? rows.reduce((s, r) => s + r.cp, 0)
+      : rows.length;
+    if (denom <= 0) return null;
+
+    const wamPct = hasValidCp
+      ? rows.reduce((s, r) => s + (r.pct! * r.cp), 0) / denom
+      : rows.reduce((s, r) => s + r.pct!, 0) / denom;
+
+    const wamGp = hasValidCp
+      ? rows.reduce((s, r) => s + uqPercentToGradePoint(r.pct!) * r.cp, 0) / denom
+      : rows.reduce((s, r) => s + uqPercentToGradePoint(r.pct!), 0) / denom;
+
+    if (!Number.isFinite(wamPct) || !Number.isFinite(wamGp)) return null;
+
+    return `WAM ${wamPct.toFixed(1)}% · ${wamGp.toFixed(1)} / 7`;
+  }, [local]);
 
   const dueThisWeek = useMemo(
     () => countAssessmentsDueThisWeek(local),
@@ -153,6 +193,7 @@ export function DashboardGradeSummaryLive({
     <>
       <StatsRow
         current={summary?.current ?? null}
+        wam={wam}
       />
       {hellOpen ? (
         <HellWeekCalendar

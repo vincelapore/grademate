@@ -60,7 +60,7 @@ export function DashboardHeader({
               }
               aria-current={activeView === "semester" ? "page" : undefined}
             >
-              Semester
+              Current
             </Link>
             {overallLocked ? (
               <button
@@ -144,7 +144,7 @@ export function DashboardHeader({
                 href="/dashboard?view=semester"
                 onClick={() => setMenuOpen(false)}
               >
-                Semester
+                Current
               </Link>
               {overallLocked ? (
                 <button

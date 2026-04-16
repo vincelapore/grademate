@@ -25,7 +25,7 @@ export function UpgradeModal({
       ? "Free includes 1 semester. Upgrade to add more semesters and unlock overall view."
       : reason === "generic"
         ? "Unlock multiple semesters, overall view, and more than three courses per semester."
-        : "Most students take 4. Upgrade to add more — and unlock the good stuff.";
+        : "Most students take 3. Upgrade to add more — and unlock the good stuff.";
 
   return (
     <div
@@ -137,6 +137,16 @@ export function UpgradeModal({
                 $19/year FOREVER
               </span>{" "}
               with code <b>UQYEEHAW</b> (first 100)
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 13,
+                color: "var(--color-text-tertiary)",
+                fontWeight: 600,
+              }}
+            >
+              A whole lot cheaper than tuition.
             </div>
           </div>
           <div className="gm-paywall-badge">Annual</div>

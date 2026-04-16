@@ -53,6 +53,7 @@ export function OnboardingFlow({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         year: initialSemester.year,
+        period: initialSemester.semester,
         semester: initialSemester.semester,
       }),
     });

@@ -3,6 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const PERIOD_OPTIONS = [
+  "Semester 1",
+  "Semester 2",
+  "Trimester 1",
+  "Trimester 2",
+  "Trimester 3",
+  "Summer",
+  "Winter",
+] as const;
+type Period = (typeof PERIOD_OPTIONS)[number];
+
+function isPeriod(x: string): x is Period {
+  return (PERIOD_OPTIONS as readonly string[]).includes(x);
+}
+
 function semesterLabelToInt(label: string): number | null {
   const normalized = label.trim().toLowerCase();
   if (normalized === "1" || normalized === "sem 1" || normalized === "semester 1")
@@ -10,6 +25,25 @@ function semesterLabelToInt(label: string): number | null {
   if (normalized === "2" || normalized === "sem 2" || normalized === "semester 2")
     return 2;
   return null;
+}
+
+function periodToOrderInt(period: Period): number {
+  switch (period) {
+    case "Semester 1":
+      return 1;
+    case "Semester 2":
+      return 2;
+    case "Trimester 1":
+      return 1;
+    case "Trimester 2":
+      return 2;
+    case "Trimester 3":
+      return 3;
+    case "Summer":
+      return 4;
+    case "Winter":
+      return 5;
+  }
 }
 
 function nextUnusedYearSemester(pairs: Array<{ year: number; semester: number }>): {
@@ -48,14 +82,18 @@ export async function POST(request: Request) {
     typeof bodyUnknown === "object" && bodyUnknown != null && "year" in bodyUnknown
       ? Number((bodyUnknown as { year: unknown }).year)
       : NaN;
+  const periodRaw =
+    typeof bodyUnknown === "object" && bodyUnknown != null && "period" in bodyUnknown
+      ? String((bodyUnknown as { period: unknown }).period)
+      : "";
   const semester =
     typeof bodyUnknown === "object" && bodyUnknown != null && "semester" in bodyUnknown
       ? String((bodyUnknown as { semester: unknown }).semester)
       : "";
-  const name =
-    typeof bodyUnknown === "object" && bodyUnknown != null && "name" in bodyUnknown
-      ? String((bodyUnknown as { name: unknown }).name)
-      : "";
+  const isCurrent =
+    typeof bodyUnknown === "object" && bodyUnknown != null && "is_current" in bodyUnknown
+      ? Boolean((bodyUnknown as { is_current: unknown }).is_current)
+      : true;
   const auto =
     typeof bodyUnknown === "object" && bodyUnknown != null && "auto" in bodyUnknown
       ? Boolean((bodyUnknown as { auto: unknown }).auto)
@@ -63,7 +101,10 @@ export async function POST(request: Request) {
 
   // If `auto` is set, we pick a unique (year, semester) behind the scenes.
   let resolvedYear = year;
-  let resolvedSemesterInt = semesterLabelToInt(semester);
+  let resolvedPeriod: Period | null =
+    periodRaw && isPeriod(periodRaw) ? (periodRaw as Period) : null;
+  let resolvedSemesterInt =
+    resolvedPeriod != null ? periodToOrderInt(resolvedPeriod) : semesterLabelToInt(semester);
   if (auto) {
     const { data: existingPairs, error: pairsErr } = await supabase
       .from("semesters")
@@ -76,12 +117,13 @@ export async function POST(request: Request) {
     const next = nextUnusedYearSemester(existingPairs ?? []);
     resolvedYear = next.year;
     resolvedSemesterInt = next.semester;
+    resolvedPeriod = resolvedSemesterInt === 2 ? "Semester 2" : "Semester 1";
   } else {
     if (!Number.isFinite(year) || year < 2000 || year > 2100) {
       return NextResponse.json({ error: "Invalid year" }, { status: 400 });
     }
-    if (!resolvedSemesterInt) {
-      return NextResponse.json({ error: "Invalid semester" }, { status: 400 });
+    if (!resolvedPeriod) {
+      return NextResponse.json({ error: "Invalid period" }, { status: 400 });
     }
   }
 
@@ -109,22 +151,77 @@ export async function POST(request: Request) {
     }
   }
 
+  // If this semester should be "current", unset any previous current semester first.
+  if (isCurrent) {
+    await supabase
+      .from("semesters")
+      .update({ is_current: false })
+      .eq("user_id", user.id)
+      .eq("is_current", true);
+  }
+
   const { data, error } = await supabase
     .from("semesters")
     .insert({
       user_id: user.id,
       year: resolvedYear,
       semester: resolvedSemesterInt!,
-      ...(name.trim() ? { name: name.trim() } : {}),
+      ...(resolvedPeriod ? { period: resolvedPeriod } : {}),
+      ...(isCurrent ? { is_current: true } : {}),
     })
     .select("id")
     .single();
 
   if (error || !data?.id) {
-    return NextResponse.json(
-      { error: error?.message ?? "Could not create semester" },
-      { status: 400 },
-    );
+    // Local dev / older DB: `period` column may not exist yet.
+    const msg = error?.message ?? "Could not create semester";
+    const lower = msg.toLowerCase();
+    const isDuplicate =
+      lower.includes("duplicate key value violates unique constraint") ||
+      lower.includes("already exists") ||
+      lower.includes("semesters_user_id_year_semester_key");
+    if (isDuplicate) {
+      return NextResponse.json(
+        { error: "Semester already exists." },
+        { status: 409 },
+      );
+    }
+    const maybeMissingPeriod =
+      lower.includes("period") &&
+      (lower.includes("column") || lower.includes("schema cache"));
+    if (maybeMissingPeriod) {
+      const retry = await supabase
+        .from("semesters")
+        .insert({
+          user_id: user.id,
+          year: resolvedYear,
+          semester: resolvedSemesterInt!,
+          ...(isCurrent ? { is_current: true } : {}),
+        })
+        .select("id")
+        .single();
+      if (retry.error || !retry.data?.id) {
+        const retryMsg = retry.error?.message ?? msg;
+        const retryLower = retryMsg.toLowerCase();
+        const retryDuplicate =
+          retryLower.includes("duplicate key value violates unique constraint") ||
+          retryLower.includes("already exists") ||
+          retryLower.includes("semesters_user_id_year_semester_key");
+        if (retryDuplicate) {
+          return NextResponse.json(
+            { error: "Semester already exists." },
+            { status: 409 },
+          );
+        }
+        return NextResponse.json(
+          { error: retryMsg },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json({ id: retry.data.id });
+    }
+
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
   return NextResponse.json({ id: data.id });

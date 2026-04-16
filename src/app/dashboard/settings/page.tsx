@@ -256,7 +256,7 @@ export default async function DashboardSettingsPage({
                   <div className="gm-settings-row-sub">
                     One plan: <strong>$29/year</strong> (about <strong>$2.42/mo</strong>).
                     Unlock multiple semesters, overall view, hell weeks, and more than
-                    four courses per semester. At checkout you can enter promotion code{" "}
+                    three courses per semester. At checkout you can enter promotion code{" "}
                     <strong>UQYEEHAW</strong> for the founding rate (
                     <strong>$19/year</strong>, first 100 redemptions).
                   </div>

@@ -29,6 +29,8 @@ type DbSemester = {
   id: string;
   year: number;
   semester: number;
+  period: string | null;
+  is_current: boolean | null;
   name: string | null;
   context_mode: string | null;
   context_university: string | null;
@@ -39,6 +41,27 @@ type DbSemester = {
 
 function semesterIntToLabel(n: number): SemesterType {
   return n === 2 ? "Semester 2" : "Semester 1";
+}
+
+function periodOrder(period: string | null | undefined): number {
+  switch ((period ?? "").trim()) {
+    case "Semester 1":
+      return 10;
+    case "Semester 2":
+      return 20;
+    case "Trimester 1":
+      return 30;
+    case "Trimester 2":
+      return 40;
+    case "Trimester 3":
+      return 50;
+    case "Summer":
+      return 90;
+    case "Winter":
+      return 95;
+    default:
+      return 999;
+  }
 }
 
 type DbAssessment = {
@@ -129,23 +152,23 @@ export default async function DashboardPage({
   const semResNew = await supabase
     .from("semesters")
     .select(
-      "id, year, semester, name, context_mode, context_university, context_year, context_semester, created_at",
+      "id, year, semester, period, is_current, name, context_mode, context_university, context_year, context_semester, created_at",
     )
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
     .returns<DbSemester[]>();
   if (semResNew.error) {
     const semResOld = await supabase
       .from("semesters")
       .select("id, year, semester, name, created_at")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
       .returns<
         Array<Pick<DbSemester, "id" | "year" | "semester" | "name" | "created_at">>
       >();
     semesters =
       semResOld.data?.map((s) => ({
         ...s,
+        period: null,
+        is_current: null,
         context_mode: null,
         context_university: null,
         context_year: null,
@@ -156,6 +179,17 @@ export default async function DashboardPage({
   }
 
   if (!semesters?.length) return null;
+
+  const sortedSemesters = [...semesters].sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    const ao = periodOrder(a.period ?? null);
+    const bo = periodOrder(b.period ?? null);
+    if (ao !== bo) return ao - bo;
+    return a.created_at.localeCompare(b.created_at);
+  });
+  const currentSemester = sortedSemesters[0]!;
+  const explicitCurrent =
+    sortedSemesters.find((s) => s.is_current === true) ?? null;
 
   const resolvedSearchParams = await Promise.resolve(searchParams);
 
@@ -179,7 +213,7 @@ export default async function DashboardPage({
     redirect("/dashboard");
   }
 
-  const semesterIds = semesters.map((s) => s.id);
+  const semesterIds = sortedSemesters.map((s) => s.id);
   const { data: enrolSemesterRows } = await supabase
     .from("subject_enrolments")
     .select("semester_id")
@@ -190,10 +224,10 @@ export default async function DashboardPage({
   );
   const semester =
     (selectedSemesterId
-      ? semesters.find((s) => s.id === selectedSemesterId)
+      ? sortedSemesters.find((s) => s.id === selectedSemesterId)
       : null) ??
-    semesters.find((s) => semesterIdsWithEnrol.has(s.id)) ??
-    semesters[0]!;
+    sortedSemesters.find((s) => semesterIdsWithEnrol.has(s.id)) ??
+    (view === "semester" ? (explicitCurrent ?? currentSemester) : currentSemester);
 
   const ctxYear = semester.context_year ?? semester.year;
   const ctxSemesterInt = semester.context_semester ?? semester.semester;
@@ -247,7 +281,7 @@ export default async function DashboardPage({
         calendarSubscribe={calendarSubscribe}
         plan={plan}
         overallLocked={plan === "free" && semesters.length > 1}
-        semesterCount={semesters.length}
+        semesterCount={sortedSemesters.length}
       />
 
       {view === "home" ? (
@@ -255,72 +289,90 @@ export default async function DashboardPage({
           <h2 className="gm-dash-home-h2">Semesters</h2>
           <section className="gm-dash-home-section">
             <div className="gm-dash-home-sem-list">
-              {semesters.map((s) => {
-                const sEnrol = enrolmentsBySemesterId.get(s.id) ?? [];
-                const semSummary = computeSemesterCurrentAndOverall(
-                  sEnrol.map((e) =>
-                    (e.assessment_results ?? []).map((a) => ({
-                      weighting: a.weighting,
-                      mark: a.mark,
-                      due_date: a.due_date,
-                    })),
-                  ),
-                );
-                const currentLabel =
-                  semSummary?.current != null
-                    ? `${semSummary.current.avg.toFixed(1)}%`
-                    : "—";
-                const overallLabel =
-                  semSummary?.overall != null
-                    ? `${semSummary.overall.avg.toFixed(1)}%`
-                    : "—";
+              {(() => {
+                const nodes: React.ReactNode[] = [];
+                let lastYear: number | null = null;
+                sortedSemesters.forEach((s) => {
+                  if (lastYear !== s.year) {
+                    lastYear = s.year;
+                    nodes.push(
+                      <div
+                        key={`year-${s.year}`}
+                        className="gm-dash-home-h2"
+                        style={{ marginTop: nodes.length ? 18 : 0 }}
+                      >
+                        {s.year}
+                      </div>,
+                    );
+                  }
 
-                return (
-                  <Link
-                    key={s.id}
-                    className="gm-dash-card gm-dash-home-sem-card"
-                    href={`/dashboard?view=semester&sid=${encodeURIComponent(s.id)}`}
-                  >
-                    <div className="gm-dash-home-sem-top">
-                      <div className="gm-dash-home-sem-title">
-                        {s.name?.trim()
-                          ? s.name.trim()
-                          : `Semester ${s.semester}, ${s.year}`}
+                  const sEnrol = enrolmentsBySemesterId.get(s.id) ?? [];
+                  const semSummary = computeSemesterCurrentAndOverall(
+                    sEnrol.map((e) =>
+                      (e.assessment_results ?? []).map((a) => ({
+                        weighting: a.weighting,
+                        mark: a.mark,
+                        due_date: a.due_date,
+                      })),
+                    ),
+                  );
+                  const currentLabel =
+                    semSummary?.current != null
+                      ? `${semSummary.current.avg.toFixed(1)}%`
+                      : "—";
+                  const overallLabel =
+                    semSummary?.overall != null
+                      ? `${semSummary.overall.avg.toFixed(1)}%`
+                      : "—";
+                const semTitle =
+                  s.period?.trim()
+                    ? `${s.period.trim()}, ${s.year}`
+                    : `Semester ${s.semester}, ${s.year}`;
+
+                  nodes.push(
+                    <Link
+                      key={s.id}
+                      className="gm-dash-card gm-dash-home-sem-card"
+                      href={`/dashboard?view=semester&sid=${encodeURIComponent(s.id)}`}
+                    >
+                      <div className="gm-dash-home-sem-top">
+                        <div className="gm-dash-home-sem-title">{semTitle}</div>
+                        <div className="gm-dash-home-sem-meta">
+                          {sEnrol.length} course{sEnrol.length === 1 ? "" : "s"}
+                        </div>
                       </div>
-                      <div className="gm-dash-home-sem-meta">
-                        {sEnrol.length} course{sEnrol.length === 1 ? "" : "s"}
+                      <div className="gm-dash-home-sem-stats">
+                        <div className="gm-dash-home-sem-stat">
+                          <span className="gm-dash-home-sem-key">Current</span>
+                          <span className="gm-dash-home-sem-val">
+                            {currentLabel}
+                          </span>
+                        </div>
+                        <div className="gm-dash-home-sem-stat">
+                          <span className="gm-dash-home-sem-key">Overall</span>
+                          <span className="gm-dash-home-sem-val">
+                            {overallLabel}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="gm-dash-home-sem-stats">
-                      <div className="gm-dash-home-sem-stat">
-                        <span className="gm-dash-home-sem-key">Current</span>
-                        <span className="gm-dash-home-sem-val">
-                          {currentLabel}
-                        </span>
-                      </div>
-                      <div className="gm-dash-home-sem-stat">
-                        <span className="gm-dash-home-sem-key">Overall</span>
-                        <span className="gm-dash-home-sem-val">
-                          {overallLabel}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                    </Link>,
+                  );
+                });
+                return nodes;
+              })()}
             </div>
             <div style={{ marginTop: 10 }}>
               <AddSemesterButton
                 className="gm-dash-components-add"
                 plan={plan}
-                semesterCount={semesters.length}
+                semesterCount={sortedSemesters.length}
               />
             </div>
           </section>
         </div>
       ) : view === "overall" ? (
         <div className="gm-dash-overall-board" style={{ marginTop: 6 }}>
-          {semesters.map((s, idx) => {
+          {sortedSemesters.map((s, idx) => {
             const sEnrol = enrolmentsBySemesterId.get(s.id) ?? [];
             const semSummary = computeSemesterCurrentAndOverall(
               sEnrol.map((e) =>
@@ -348,7 +400,11 @@ export default async function DashboardPage({
               >
                 <div className="gm-dash-overall-col-inner">
                   <DashboardSemesterColumnHeader
-                    title={`Semester ${s.semester}, ${s.year}`}
+                    title={
+                      s.period?.trim()
+                        ? `${s.period.trim()}, ${s.year}`
+                        : `Semester ${s.semester}, ${s.year}`
+                    }
                     summary={summaryLabels}
                     showAddCourseButton={false}
                     plan={plan}
@@ -416,11 +472,25 @@ export default async function DashboardPage({
         <>
           <DashboardSemesterTitleRow
             title={
-              semester.name?.trim()
-                ? semester.name.trim()
+              semester.period?.trim()
+                ? `${semester.period.trim()}, ${semester.year}`
                 : `Semester ${semester.semester}, ${semester.year}`
             }
             plan={plan}
+            semesterSettings={{
+              semesterId: semester.id,
+              year: semester.year,
+              period:
+                (semester.period?.trim() as
+                  | "Semester 1"
+                  | "Semester 2"
+                  | "Trimester 1"
+                  | "Trimester 2"
+                  | "Trimester 3"
+                  | "Summer"
+                  | "Winter") ?? "Semester 1",
+              isCurrent: semester.is_current === true,
+            }}
             addCourse={{
               semesterId: semester.id,
               year: ctxYear,
@@ -494,6 +564,9 @@ export default async function DashboardPage({
                     mark: a.mark,
                     due_date: a.due_date ?? null,
                     sub_assessments: a.sub_assessments,
+                    is_hurdle: a.is_hurdle,
+                    hurdle_threshold: a.hurdle_threshold,
+                    hurdle_requirements: a.hurdle_requirements,
                   })),
                 }),
               )}
