@@ -1,5 +1,6 @@
 import { GmButtonAnchor, GmButtonLink } from "@/components/gm/GmButton";
 import { GmShell } from "@/components/gm/GmShell";
+import { AuthAwareCta } from "@/components/AuthAwareCta";
 import { LandingGoogleButton } from "@/components/LandingGoogleButton";
 
 export default function Home() {
@@ -220,9 +221,13 @@ export default function Home() {
                 <span className="gm-check">✓</span> Assessment due dates
               </li>
             </ul>
-            <GmButtonLink className="gm-price-btn" href="/auth/login">
-              Get started
-            </GmButtonLink>
+            <AuthAwareCta
+              className="gm-btn-primary gm-price-btn"
+              loggedOutHref="/auth/login"
+              loggedOutLabel="Get started"
+              loggedInHref="/dashboard"
+              loggedInLabel="Dashboard"
+            />
           </div>
 
           <div className="gm-price-card featured">
@@ -261,9 +266,13 @@ export default function Home() {
                 (Stripe portal)
               </li>
             </ul>
-            <GmButtonLink className="gm-price-btn featured" href="/auth/login">
-              Upgrade to Pro
-            </GmButtonLink>
+            <AuthAwareCta
+              className="gm-btn-primary gm-price-btn featured"
+              loggedOutHref="/auth/login"
+              loggedOutLabel="Upgrade to Pro"
+              loggedInHref="/dashboard/settings"
+              loggedInLabel="Dashboard"
+            />
           </div>
         </div>
       </div>
