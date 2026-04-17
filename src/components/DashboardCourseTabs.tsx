@@ -8,7 +8,6 @@ import {
   type CSSProperties,
 } from "react";
 import { CourseCard } from "@/components/CourseCard";
-import Assessment from "@/components/Assessment";
 
 type AssessmentPreview = {
   id: string;
@@ -672,12 +671,6 @@ export function DashboardCourseTabs({
           );
         })}
       </div>
-
-      {process.env.NODE_ENV === "development" ? (
-        <div style={{ marginTop: 10 }}>
-          <Assessment />
-        </div>
-      ) : null}
 
       {active ? (
         <div className="gm-dash-course-tabs-panel" role="tabpanel">
