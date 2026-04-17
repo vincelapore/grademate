@@ -21,6 +21,51 @@ export type WeightedMark = {
   mark?: string | number | null; // Can be fraction string like "9/10", percentage number, or null
 };
 
+type WeightedSubMark = {
+  mark: string | null | undefined;
+  weight: number;
+};
+
+function normalizeBestOf(totalRows: number, bestOf?: number | null): number {
+  if (bestOf == null || !Number.isFinite(bestOf)) return totalRows;
+  return Math.max(1, Math.min(totalRows, Math.floor(bestOf)));
+}
+
+function subMarkPercent(row: WeightedSubMark): number | null {
+  const str = row.mark == null ? "" : String(row.mark).trim();
+  if (str === "") return null;
+  const p = parseMarkToPercentage(row.mark);
+  return p == null || Number.isNaN(p) ? null : p;
+}
+
+function weightedAverageForRows(
+  rows: Array<WeightedSubMark & { pct: number }>,
+): number | null {
+  if (rows.length === 0) return null;
+  const wSum = rows.reduce(
+    (s, r) => s + (typeof r.weight === "number" && r.weight > 0 ? r.weight : 0),
+    0,
+  );
+  if (wSum > 0) {
+    return rows.reduce((acc, r) => acc + (r.pct * r.weight) / wSum, 0);
+  }
+  return rows.reduce((acc, r) => acc + r.pct, 0) / rows.length;
+}
+
+function selectBestMarkedRows(
+  rows: WeightedSubMark[],
+  bestOf?: number | null,
+): Array<WeightedSubMark & { pct: number }> {
+  const marked = rows
+    .map((r) => {
+      const pct = subMarkPercent(r);
+      return pct == null ? null : { ...r, pct };
+    })
+    .filter(Boolean) as Array<WeightedSubMark & { pct: number }>;
+  const count = Math.min(normalizeBestOf(rows.length, bestOf), marked.length);
+  return [...marked].sort((a, b) => b.pct - a.pct).slice(0, count);
+}
+
 /**
  * Compute weighted total (0–100) from assessment items. Pass/fail items are excluded.
  */
@@ -138,31 +183,24 @@ export function formatMarkDisplay(mark: string | number | null | undefined): { d
  * Weighted overall % for this assessment. Returns null unless **every** row has a valid mark.
  */
 export function aggregateSubAssessmentMarks(
-  rows: { mark: string | null | undefined; weight: number }[],
+  rows: WeightedSubMark[],
+  bestOf?: number | null,
 ): { mode: "percent"; value: number } | null {
   if (rows.length === 0) return null;
+  const needed = normalizeBestOf(rows.length, bestOf);
+  const selected = selectBestMarkedRows(rows, bestOf);
+  if (selected.length < needed) return null;
+  const value = weightedAverageForRows(selected);
+  return value == null ? null : { mode: "percent", value };
+}
 
-  const wSum = rows.reduce(
-    (s, r) => s + (typeof r.weight === "number" && r.weight > 0 ? r.weight : 0),
-    0
-  );
-  if (wSum <= 0) return null;
-
-  for (const r of rows) {
-    const str = r.mark == null ? "" : String(r.mark).trim();
-    if (str === "") return null;
-    const p = parseMarkToPercentage(r.mark);
-    if (p == null || Number.isNaN(p)) return null;
-  }
-
-  let weightedPct = 0;
-  for (const r of rows) {
-    const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
-    const p = parseMarkToPercentage(r.mark)!;
-    weightedPct += (p * w) / wSum;
-  }
-
-  return { mode: "percent", value: weightedPct };
+export function currentSubAssessmentPercent(
+  rows: WeightedSubMark[],
+  bestOf?: number | null,
+): number | null {
+  if (rows.length === 0) return null;
+  const selected = selectBestMarkedRows(rows, bestOf);
+  return weightedAverageForRows(selected);
 }
 
 /**
@@ -170,31 +208,17 @@ export function aggregateSubAssessmentMarks(
  * Same weighting as aggregateSubAssessmentMarks (weights are course % shares of this item).
  */
 export function maxAchievableSubAssessmentPercent(
-  rows: { mark: string | null | undefined; weight: number }[],
+  rows: WeightedSubMark[],
+  bestOf?: number | null,
 ): number | null {
-  const wSum = rows.reduce(
-    (s, r) => s + (typeof r.weight === "number" && r.weight > 0 ? r.weight : 0),
-    0
-  );
-  if (wSum <= 0 || rows.length === 0) return null;
-
-  let acc = 0;
-  for (const r of rows) {
-    const w = typeof r.weight === "number" && r.weight > 0 ? r.weight : 0;
-    if (w <= 0) continue;
-    const str = r.mark == null ? "" : String(r.mark).trim();
-    if (str === "") {
-      acc += w * 100;
-      continue;
-    }
-    const p = parseMarkToPercentage(r.mark);
-    if (p == null || Number.isNaN(p)) {
-      acc += w * 100;
-    } else {
-      acc += w * p;
-    }
-  }
-  return acc / wSum;
+  if (rows.length === 0) return null;
+  const count = normalizeBestOf(rows.length, bestOf);
+  const candidates = rows.map((r) => ({
+    ...r,
+    pct: subMarkPercent(r) ?? 100,
+  }));
+  const selected = [...candidates].sort((a, b) => b.pct - a.pct).slice(0, count);
+  return weightedAverageForRows(selected);
 }
 
 export function formatAggregateMarkForStorage(

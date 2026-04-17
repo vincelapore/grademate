@@ -11,8 +11,9 @@ type Props = {
   requiredMark: number | null;
   hideGoal?: boolean;
   assessmentCourseWeightPercent: number;
+  bestOf?: number | null;
   rows: SubAssessmentRow[];
-  onRowsChange: (rows: SubAssessmentRow[]) => void;
+  onRowsChange: (rows: SubAssessmentRow[], bestOf?: number | null) => void;
 };
 
 function handleMarkChange(value: string, onUpdate: (v: string) => void): void {
@@ -30,6 +31,7 @@ export function AssessmentCalculatorInline({
   requiredMark,
   hideGoal = false,
   assessmentCourseWeightPercent,
+  bestOf = null,
   rows,
   onRowsChange,
 }: Props) {
@@ -104,7 +106,7 @@ export function AssessmentCalculatorInline({
 
   const updateRow = (index: number, patch: Partial<SubAssessmentRow>) => {
     const next = rows.map((r, i) => (i === index ? { ...r, ...patch } : r));
-    onRowsChange(next);
+    onRowsChange(next, bestOf);
   };
 
   const addRow = () => {
@@ -113,12 +115,19 @@ export function AssessmentCalculatorInline({
         [...rows, { name: `Part ${rows.length + 1}`, mark: null, weight: 0 }],
         courseWt,
       ),
+      bestOf,
     );
   };
 
   const removeRow = (index: number) => {
     if (rows.length <= 1) return;
-    onRowsChange(withEqualWeightsFromRows(rows.filter((_, i) => i !== index), courseWt));
+    const next = withEqualWeightsFromRows(
+      rows.filter((_, i) => i !== index),
+      courseWt,
+    );
+    const nextBestOf =
+      bestOf != null ? Math.min(bestOf, next.length) : null;
+    onRowsChange(next, nextBestOf);
   };
 
   const isSingle = rows.length <= 1;
@@ -225,6 +234,27 @@ export function AssessmentCalculatorInline({
               </div>
             );
           })}
+          {rows.length > 1 ? (
+            <div className="flex items-center justify-end gap-2 text-xs text-[var(--color-text-tertiary)]">
+              <span>Count</span>
+              <select
+                value={bestOf ?? rows.length}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  onRowsChange(rows, next >= rows.length ? null : next);
+                }}
+                className="gm-dash-parts-input gm-dash-parts-num"
+                style={{ maxWidth: 88 }}
+                aria-label="How many parts count"
+              >
+                {Array.from({ length: rows.length }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    best {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           {!weightsBalanced ? (
             <div className="gm-dash-parts-warn" role="status">
               Weights should add to {formatMonoValue(courseWt)}% (currently {formatMonoValue(weightSumRaw)}%)

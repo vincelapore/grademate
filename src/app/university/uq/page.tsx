@@ -20,6 +20,7 @@ import {
   calculateEqualDistributionMarks,
   aggregateSubAssessmentMarks,
   formatAggregateMarkForStorage,
+  currentSubAssessmentPercent,
   type GradeBand,
 } from "@/lib/grades";
 import { isValidMarkInput } from "@/lib/mark-input";
@@ -31,6 +32,7 @@ import {
   encodeState,
   type AppState,
   type CourseState,
+  type SubAssessmentsState,
   type SubAssessmentRow,
 } from "@/lib/state";
 import type { CourseAssessment } from "@/lib/uq-scraper";
@@ -353,12 +355,20 @@ function HomeContent() {
   );
 
   const updateSubAssessmentRows = useCallback(
-    (courseIndex: number, itemIndex: number, rows: SubAssessmentRow[]) => {
+    (
+      courseIndex: number,
+      itemIndex: number,
+      rows: SubAssessmentRow[],
+      bestOf?: number | null,
+    ) => {
       setState((prev) => {
         const courses = [...prev.courses];
         const course = { ...courses[courseIndex] };
         const sub = { ...(course.subAssessments ?? {}) };
-        sub[itemIndex] = { rows };
+        sub[itemIndex] = {
+          rows,
+          ...(bestOf != null && bestOf < rows.length ? { bestOf } : {}),
+        };
         course.subAssessments = sub;
         courses[courseIndex] = course;
         return { ...prev, courses };
@@ -368,8 +378,13 @@ function HomeContent() {
   );
 
   const applySubAssessmentRows = useCallback(
-    (courseIndex: number, itemIndex: number, rows: SubAssessmentRow[]) => {
-      updateSubAssessmentRows(courseIndex, itemIndex, rows);
+    (
+      courseIndex: number,
+      itemIndex: number,
+      rows: SubAssessmentRow[],
+      bestOf?: number | null,
+    ) => {
+      updateSubAssessmentRows(courseIndex, itemIndex, rows, bestOf);
       const agg = aggregateSubAssessmentMarks(
         rows.map((r) => ({
           mark: r.mark,
@@ -378,6 +393,7 @@ function HomeContent() {
               ? r.weight
               : 0,
         })),
+        bestOf,
       );
       if (agg != null) {
         const s = formatAggregateMarkForStorage(agg);
@@ -1225,6 +1241,7 @@ function HomeContent() {
                                         idx,
                                         i,
                                         normalized,
+                                        state.courses[idx]?.subAssessments?.[i]?.bestOf ?? null,
                                       );
                                       setAssessmentCalculatorPopup({
                                         courseIdx: idx,
@@ -1735,6 +1752,7 @@ function HomeContent() {
               : (courseFillerMarks[itemIdx] ?? null);
           const assessmentCourseWeight =
             typeof it.weight === "number" ? it.weight : 0;
+          const bestOf = c.subAssessments?.[itemIdx]?.bestOf ?? null;
           const rows: SubAssessmentRow[] = ensureSubAssessmentRows(
             c.subAssessments?.[itemIdx]?.rows?.length
               ? c.subAssessments[itemIdx]!.rows.map((r) => ({
@@ -1753,16 +1771,18 @@ function HomeContent() {
               assessmentName={it.name}
               goalMarkPercent={tablePlaceholderPercent}
               assessmentCourseWeightPercent={assessmentCourseWeight}
+              bestOf={bestOf}
               courseMark={c.marks[itemIdx] ?? null}
               onCourseMarkChange={(v) =>
                 updateMark(assessmentCalculatorPopup.courseIdx, itemIdx, v)
               }
               rows={rows}
-              onRowsChange={(next) =>
+              onRowsChange={(next, nextBestOf) =>
                 applySubAssessmentRows(
                   assessmentCalculatorPopup.courseIdx,
                   itemIdx,
                   next,
+                  nextBestOf,
                 )
               }
             />

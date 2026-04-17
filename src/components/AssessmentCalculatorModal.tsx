@@ -2,6 +2,7 @@
 
 import {
   calculateEqualDistributionMarks,
+  currentSubAssessmentPercent,
   formatMarkDisplay,
   maxAchievableSubAssessmentPercent,
   parseMarkToPercentage,
@@ -23,10 +24,11 @@ type Props = {
   /** Same emerald % as this row’s Mark placeholder on the course table (equal split to goal). */
   goalMarkPercent: number | null;
   assessmentCourseWeightPercent: number;
+  bestOf?: number | null;
   courseMark: string | number | null;
   onCourseMarkChange: (value: string) => void;
   rows: SubAssessmentRow[];
-  onRowsChange: (rows: SubAssessmentRow[]) => void;
+  onRowsChange: (rows: SubAssessmentRow[], bestOf?: number | null) => void;
 };
 
 function handleMarkChange(
@@ -53,6 +55,7 @@ export function AssessmentCalculatorModal({
   assessmentName,
   goalMarkPercent,
   assessmentCourseWeightPercent,
+  bestOf = null,
   courseMark,
   onCourseMarkChange,
   rows,
@@ -103,7 +106,15 @@ export function AssessmentCalculatorModal({
     rows.map((r) => ({
       mark: r.mark,
       weight: typeof r.weight === "number" ? r.weight : 0
-    }))
+    })),
+    bestOf,
+  );
+  const currentPercent = currentSubAssessmentPercent(
+    rows.map((r) => ({
+      mark: r.mark,
+      weight: typeof r.weight === "number" ? r.weight : 0,
+    })),
+    bestOf,
   );
   const targetPercentForCap =
     cascadeTargetPercent != null ? cascadeTargetPercent : null;
@@ -114,7 +125,7 @@ export function AssessmentCalculatorModal({
 
   const updateRow = (index: number, patch: Partial<SubAssessmentRow>) => {
     const next = rows.map((r, i) => (i === index ? { ...r, ...patch } : r));
-    onRowsChange(next);
+    onRowsChange(next, bestOf);
   };
 
   const addRow = () => {
@@ -125,7 +136,8 @@ export function AssessmentCalculatorModal({
           { name: `Part ${rows.length + 1}`, mark: null, weight: 0 }
         ],
         courseWt
-      )
+      ),
+      bestOf,
     );
   };
 
@@ -135,7 +147,8 @@ export function AssessmentCalculatorModal({
       withEqualWeightsFromRows(
         rows.filter((_, i) => i !== index),
         courseWt
-      )
+      ),
+      bestOf != null ? Math.min(bestOf, rows.length - 1) : null,
     );
   };
 
@@ -227,6 +240,30 @@ export function AssessmentCalculatorModal({
                 Weights: {formatMonoValue(weightSumRaw)}% / {formatMonoValue(courseWt)}%
               </p>
             </div>
+            {rows.length > 1 ? (
+              <div className="flex items-center justify-end gap-2">
+                <p className="text-xs text-slate-500">Count</p>
+                <select
+                  value={bestOf ?? rows.length}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    onRowsChange(rows, next >= rows.length ? null : next);
+                  }}
+                  className="rounded-lg border border-slate-700/50 bg-slate-900/50 px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-sky-500/50"
+                >
+                  {Array.from({ length: rows.length }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      best {n}
+                    </option>
+                  ))}
+                </select>
+                {currentPercent != null ? (
+                  <span className="text-xs text-slate-500">
+                    current {formatMonoValue(currentPercent)}%
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <div className="space-y-2">
               {rows.map((row, i) => {
                 const showPlaceholder =

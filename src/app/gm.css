@@ -204,6 +204,21 @@ html[data-theme="dark"] {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* Assessment "piece" chevron (matches Assessment.jsx) */
+.gm-assess-chevron {
+  font-size: 18px;
+  color: var(--color-text-tertiary);
+  display: inline-block;
+  transform: rotate(90deg);
+  transition: transform 0.2s, color 0.15s;
+  line-height: 1;
+  margin-left: 4px;
+}
+.gm-assess-chevron--open {
+  transform: rotate(270deg);
+  color: var(--gm-accent, #1d9e75);
+}
 .gm-dash-header {
   display: flex;
   align-items: center;
@@ -2523,6 +2538,11 @@ a.gm-dash-btn {
 
 .gm-dash-mark-pct--accent {
   color: var(--gm-accent);
+  font-size: 11px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .gm-dash-icon-btn {
@@ -3237,6 +3257,123 @@ a.gm-dash-btn {
 /* --- Inline parts editor (assessment dropdown) --- */
 .gm-dash-parts {
   padding: 2px 0;
+}
+
+/* --- CourseCard deluxe polish (styling only) --- */
+.gm-coursecard-top {
+  padding-bottom: 18px;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+}
+
+.gm-coursecard-assess-name {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.gm-coursecard-assessment-row {
+  cursor: pointer;
+}
+
+.gm-coursecard-assessment-row--open {
+  background: color-mix(in srgb, var(--gm-accent) 5%, var(--color-background-primary));
+  border-color: color-mix(in srgb, var(--gm-accent) 22%, var(--color-border-tertiary));
+}
+
+.gm-coursecard-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 0.5px solid var(--color-border-tertiary);
+  background: color-mix(
+    in srgb,
+    var(--color-background-secondary) 70%,
+    var(--color-background-primary)
+  );
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Projected marks in CourseCard should be text-only (like Assessment) */
+.gm-coursecard-projection {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  height: auto !important;
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.gm-coursecard-wt {
+  font-family: var(--font-gm-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Make compact dashboard controls "Assessment-sized" inside CourseCard pieces */
+.gm-coursecard-assessment-row .gm-dash-mark-input {
+  height: 34px;
+  width: 5.5rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-background-primary) 70%, var(--color-background-secondary));
+  border-color: var(--color-border-tertiary);
+}
+
+.gm-coursecard-assessment-row .gm-dash-mark-cell {
+  gap: 12px;
+}
+
+.gm-coursecard-parts {
+  padding-top: 2px;
+}
+
+.gm-coursecard-parts .gm-dash-parts-grid {
+  gap: 12px;
+}
+
+.gm-coursecard-parts .gm-dash-parts-row {
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 0.5px solid var(--color-border-tertiary);
+  background: var(--color-background-secondary);
+}
+
+.gm-coursecard-parts .gm-dash-parts-row + .gm-dash-parts-row {
+  margin-top: 2px;
+}
+
+.gm-coursecard-parts .gm-dash-parts-input {
+  background: var(--color-background-primary);
+  height: 34px;
+  border-radius: 10px;
+}
+
+.gm-coursecard-parts .gm-dash-parts-mark .gm-dash-parts-input {
+  background: color-mix(in srgb, var(--color-background-primary) 86%, #ffffff);
+  border-color: var(--color-border-secondary);
+}
+
+.gm-coursecard-parts .gm-dash-parts-add {
+  height: 30px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.gm-coursecard-parts .gm-dash-parts-add:hover {
+  background: color-mix(in srgb, var(--gm-accent) 10%, transparent);
+  color: var(--gm-accent);
 }
 
 .gm-dash-parts-grid {

@@ -10,13 +10,19 @@ export type SubAssessmentRow = {
   weight?: number;
 };
 
+export type SubAssessmentsState = {
+  rows: SubAssessmentRow[];
+  /** Count only the best N parts; omitted/null means all parts count. */
+  bestOf?: number | null;
+};
+
 export type CourseState = {
   course: CourseAssessment;
   marks: (string | number | null)[]; // Can be fraction string like "9/10", percentage number, or null
   /** Optional "out of" per assessment; when set, mark input is integer marks and we show "Need N/outOf" */
   outOf?: (number | null)[];
   /** Per-assessment breakdown rows (calculator), keyed by assessment item index */
-  subAssessments?: Record<number, { rows: SubAssessmentRow[] }>;
+  subAssessments?: Record<number, SubAssessmentsState>;
   goalGrade: GradeBand;
   semester?: SemesterSelection;
 };

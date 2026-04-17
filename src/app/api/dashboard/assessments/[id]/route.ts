@@ -17,6 +17,7 @@ type SubAssessmentRowPayload = {
 
 type SubAssessmentsPayload = {
   rows: SubAssessmentRowPayload[];
+  bestOf?: number | null;
 };
 
 function parseMarkField(raw: unknown): { mark: string | null } | { error: string } {
@@ -37,6 +38,7 @@ function parseSubAssessmentsField(
   }
   const obj = raw as Record<string, unknown>;
   const rows = obj.rows;
+  const bestOfRaw = obj.bestOf;
   if (!Array.isArray(rows)) {
     return { error: "sub_assessments.rows must be an array" };
   }
@@ -69,7 +71,21 @@ function parseSubAssessmentsField(
     }
     parsedRows.push({ name: nameRaw.trim(), mark: parsedMark.mark, weight });
   }
-  return { sub_assessments: { rows: parsedRows } };
+  let bestOf: number | null | undefined = undefined;
+  if (bestOfRaw != null) {
+    if (
+      typeof bestOfRaw !== "number" ||
+      !Number.isFinite(bestOfRaw) ||
+      !Number.isInteger(bestOfRaw)
+    ) {
+      return { error: "bestOf must be an integer" };
+    }
+    if (bestOfRaw < 1 || bestOfRaw > parsedRows.length) {
+      return { error: "bestOf must be between 1 and the number of parts" };
+    }
+    bestOf = bestOfRaw;
+  }
+  return { sub_assessments: { rows: parsedRows, ...(bestOf != null ? { bestOf } : {}) } };
 }
 
 function parsePatchPayload(
@@ -109,6 +125,7 @@ function computedMarkFromComponents(
       weight:
         typeof r.weight === "number" && !Number.isNaN(r.weight) ? r.weight : 0,
     })),
+    sub.bestOf,
   );
   return formatAggregateMarkForStorage(agg);
 }
