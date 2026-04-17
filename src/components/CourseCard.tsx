@@ -1058,8 +1058,11 @@ export function CourseCard({
           ) : null}
         </div>
 
-        <div className="mt-10">
-          <div className="flex items-center justify-end">
+        <div className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">
+              Assessments
+            </p>
             <button
               type="button"
               onClick={(e) => {
@@ -1075,7 +1078,6 @@ export function CourseCard({
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   strokeLinecap="round"
@@ -1087,11 +1089,7 @@ export function CourseCard({
             </button>
           </div>
 
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)]">
-            Assessments
-          </p>
-
-        <div className="gm-coursecard-assessments mt-6 flex flex-col gap-3">
+          <div className="gm-coursecard-assessments flex flex-col gap-2">
             {assessments.map((a, i) => {
               const stored = formatMark(a);
               const value = draft[a.id] !== undefined ? draft[a.id]! : stored;
@@ -1140,16 +1138,6 @@ export function CourseCard({
                 }
                 if (livePct != null && !Number.isNaN(livePct)) {
                   return <span className="gm-dash-mark-pct">{livePct.toFixed(0)}%</span>;
-                }
-                if (!stored && fill != null) {
-                  const { percentage } = formatMarkDisplay(fill);
-                  if (percentage == null) return null;
-                  const display = Math.min(100, Math.ceil(percentage - 1e-9));
-                  return (
-                    <span className="gm-coursecard-projection gm-dash-mark-pct gm-dash-mark-pct--accent">
-                      ~{display}%
-                    </span>
-                  );
                 }
                 return null;
               })();
@@ -1303,15 +1291,10 @@ export function CourseCard({
                         </span>
                       );
                     }
-                    const currentLabel = anyEntered ? pctLabel : "0%";
+                    if (!anyEntered) return null;
                     return (
                       <span className="font-semibold text-[var(--color-text-primary)]">
-                        {currentLabel ?? "—"}
-                        {reqLabel ? (
-                          <span className="ml-2 gm-coursecard-projection gm-dash-mark-pct gm-dash-mark-pct--accent">
-                            {reqLabel}
-                          </span>
-                        ) : null}
+                        {pctLabel ?? "—"}
                       </span>
                     );
                   })();
@@ -1323,9 +1306,16 @@ export function CourseCard({
                         {dots}
                       </div>
                       <div className="flex flex-col items-end leading-tight">
-                        <span className="font-semibold text-[var(--gm-accent)]">
-                          {contrib != null ? `${contrib}%` : "—"}
-                        </span>
+                        {contrib != null ? (
+                          <span className="font-semibold text-[var(--gm-accent)]">{contrib}%</span>
+                        ) : reqLabel != null ? (
+                          <span className="text-[12px] font-medium text-[var(--color-text-tertiary)]">
+                            need{" "}
+                            <span className="font-semibold text-[var(--gm-accent)]">{reqLabel}</span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-[var(--color-text-tertiary)]">—</span>
+                        )}
                         <span className="text-[10px] font-mono text-[var(--color-text-tertiary)]">
                           of {formatMonoValue(a.weighting)}%
                         </span>
@@ -1394,9 +1384,16 @@ export function CourseCard({
                       {markHint}
                     </div>
                     <div className="flex flex-col items-end leading-tight">
-                      <span className="font-semibold text-[var(--gm-accent)]">
-                        {contrib != null ? `${contrib}%` : "—"}
-                      </span>
+                      {contrib != null ? (
+                        <span className="font-semibold text-[var(--gm-accent)]">{contrib}%</span>
+                      ) : fill != null && computed.isGoalAchievable ? (
+                        <span className="text-[12px] font-medium text-[var(--color-text-tertiary)]">
+                          need{" "}
+                          <span className="font-semibold text-[var(--gm-accent)]">~{Math.ceil(Math.max(0, fill) - 1e-9)}%</span>
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-[var(--color-text-tertiary)]">—</span>
+                      )}
                       <span className="text-[10px] font-mono text-[var(--color-text-tertiary)]">
                         of {formatMonoValue(a.weighting)}%
                       </span>
